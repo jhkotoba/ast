@@ -1,10 +1,16 @@
 import { constant } from "/script/common/common.js";
+import { createMenu, defaultMenuList } from "/script/common/menu.js";
 
 /**
  * 사이드 메뉴 및 이벤트 생성
  */
 const aside = document.getElementsByTagName('aside')[0];
-aside.innerHTML = sessionStorage.getItem(constant.storage.menu);
+const storedMenu = sessionStorage.getItem(constant.storage.menu);
+const menuHtml = storedMenu && storedMenu !== 'null' ? storedMenu : createMenu(defaultMenuList);
+aside.innerHTML = menuHtml;
+if(!storedMenu || storedMenu === 'null'){
+    sessionStorage.setItem(constant.storage.menu, menuHtml);
+}
 aside.addEventListener('click', event => {
     if(event.target.dataset.lv == 1){
         let childNodes = event.target.nextSibling.childNodes;

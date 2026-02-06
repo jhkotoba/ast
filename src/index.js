@@ -83,9 +83,6 @@ const login = require(`${basePath}/routes/login.js`);
 app.use('/login', login);
 
 // 시스템
-const system = require(`${basePath}/routes/system.js`);
-app.use("/system", system);
-
 // 계좌관리
 const account = require(`${basePath}/routes/account.js`);
 app.use("/account", account);

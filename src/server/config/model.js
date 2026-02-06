@@ -1,7 +1,6 @@
 const fs = require("fs");
 const logger = require(`${basePath}/config/logger.js`);
 const codeService = require(`${basePath}/services/codeService.js`);
-const menuService = require(`${basePath}/services/menuService.js`);
 
 /**
  * 페이지 이동 세팅
@@ -39,19 +38,7 @@ exports.modelAndView = function(path, params){
             }
         }),
         // 권한 체크
-        new Promise((resolve, reject) => {
-            if(params.request.route.path == '/'){
-                resolve(true);
-            }else{
-                menuService.isUserMenuAuth({path, request: params.request})
-                    .then(isAuth => resolve(isAuth)
-                    ).catch(error => {
-                        logger.error(error);
-                        reject(error);
-                    });
-            }
-            
-        }),
+        new Promise((resolve) => resolve(true)),
     ])
     .then(values => {
         let html = values[0];

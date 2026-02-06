@@ -1,6 +1,6 @@
 /** 메뉴 태그 생성
  */
- export const createMenu = menuList => {
+export const createMenu = menuList => {
 
 	if(menuList.length < 1) return '<ul></ul>';
 	
@@ -57,3 +57,16 @@
 	html += '</ul>';
 	return html;
 }
+
+// act 프로젝트(가계부 축소) 기본 메뉴
+export const defaultMenuList = [
+	// 1레벨(그룹)
+	{ menuNo: 1, menuNm: '가계부', menuUrl: null, menuLv: 1, menuSeq: 1, groupNo: 0 },
+
+	// 2레벨(페이지)
+	{ menuNo: 11, menuNm: '메인', menuUrl: '/', menuLv: 2, menuSeq: 1, groupNo: 1 },
+	{ menuNo: 12, menuNm: '계좌관리', menuUrl: '/account/account', menuLv: 2, menuSeq: 2, groupNo: 1 },
+	{ menuNo: 13, menuNm: '계좌내역', menuUrl: '/account/record', menuLv: 2, menuSeq: 3, groupNo: 1 },
+];
+
+export const createDefaultMenu = () => createMenu(defaultMenuList);
