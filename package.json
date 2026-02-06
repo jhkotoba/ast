@@ -1,0 +1,24 @@
+{
+  "name": "ast",
+  "version": "0.0.1",
+  "description": "ast",
+  "main": "index.js",
+  "scripts": {
+    "server-dev": "node src/index.js dev",
+    "server-prd": "node src/index.js prd"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "connect-redis": "^6.1.1",
+    "dotenv": "^17.2.4",
+    "express": "^4.22.1",
+    "express-session": "^1.19.0",
+    "ioredis": "^4.31.0",
+    "mariadb": "^3.4.5",
+    "nodejs-jsencrypt": "^3.0.0-rc.1",
+    "winston": "^3.19.0",
+    "winston-daily-rotate-file": "^5.0.0"
+  }
+}

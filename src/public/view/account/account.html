@@ -1,0 +1,31 @@
+<link rel="stylesheet" href="/lib/wGrid/wGrid.css" type="text/css"/> 
+<script type="module" src="/lib/wGrid/wGrid.js"></script>
+<script type="module" src="/script/account/account.js"></script>
+
+<div class="content">
+    <div>
+        <div class="sub-title">
+            <span class="text">■ 계좌 관리</span>
+
+            <!-- 계좌관리 버튼 -->
+            <div class="button-box">
+                <button id="btnAdd">추가</button>
+                <button id="btnEdit">편집</button>
+                <button id="btnRemove">삭제</button>
+                <button id="btnCancel">취소</button>
+                <button id="btnSave" class="warning">저장</button>
+            </div>
+        </div>
+
+        <!-- 계좌 목록 -->
+        <div id="account" class="none-select"></div>
+    </div>
+</div>
+
+<!-- 계좌 상세 팝업 -->
+<div id="acctModal" class="modal">
+    <div class="content">
+        <span id="acctClose" class="close">&times;</span>
+        
+    </div>
+</div>
