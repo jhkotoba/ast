@@ -12,9 +12,11 @@ global.public =  __dirname + '/public';
 global.rootPath =  __dirname;
 
 // 서버 호스트
-const hostname = process.env.HOST_NAME;
+// const hostname = process.env.HOST_NAME;
+const hostname = 'localhost';
 // 서버 포트
-const port = process.env.PORT;
+// const port = process.env.PORT;
+const port = Number(process.env.PORT) || 9001;
 /**
  * Node.js를 위한 빠르고 개방적인 간결한 웹 프레임워크
  */
@@ -38,37 +40,39 @@ let redisStore = require("connect-redis")(session);
 /**
  * Redis 클라이언트 미들웨어
  */
-const redis = require("ioredis");
-// 레디스 클라이언트 세팅
-let redisClient = new redis({
-  host: process.env.REDIS_HOST,
-  // 기존 환경변수 오타를 고려.
-  // REDIS_PROT, REDIS_PORT 둘 다 지원.
-  port: process.env.REDIS_PORT ?? process.env.REDIS_PROT,
-  password: process.env.REDIS_PASSWORD,
-  db : process.env.REDIS_DB,
-});
+// const redis = require("ioredis");
+// // 레디스 클라이언트 세팅
+// let redisClient = new redis({
+//   host: process.env.REDIS_HOST,
+//   // 기존 환경변수 오타를 고려.
+//   // REDIS_PROT, REDIS_PORT 둘 다 지원.
+//   port: process.env.REDIS_PORT ?? process.env.REDIS_PROT,
+//   password: process.env.REDIS_PASSWORD,
+//   db : process.env.REDIS_DB,
+// });
 
 // 레디스 세션 연결
-app.use(
-  session({
-    store: new redisStore({ client: redisClient, prefix : "session:" }),
-    saveUninitialized: false, // 세션에 저장할 때 초기화 여부
-    secret: process.env.SESSION_SECRET, // 세션을 발급할 때 사용되는 키
-    resave: false, // 세션을 저장하고 불러올 때 세션을 다시 저장할지 여부를 결정
-    cookie: {
-      // 세션 쿠키 옵션.
-      // httpOnly, secure 설정은 cookie 하위에 위치.
-      httpOnly: true,
-      secure: process.argv[2] === 'dev' ? false : true,
-      maxAge: 3600000
-    }, // 쿠키의 생명 기간
-    rolling: true
-  })
-);
+// app.use(
+//   session({
+//     store: new redisStore({ client: redisClient, prefix : "session:" }),
+//     saveUninitialized: false, // 세션에 저장할 때 초기화 여부
+//     secret: process.env.SESSION_SECRET, // 세션을 발급할 때 사용되는 키
+//     resave: false, // 세션을 저장하고 불러올 때 세션을 다시 저장할지 여부를 결정
+//     cookie: {
+//       // 세션 쿠키 옵션.
+//       // httpOnly, secure 설정은 cookie 하위에 위치.
+//       httpOnly: true,
+//       secure: process.argv[2] === 'dev' ? false : true,
+//       maxAge: 3600000
+//     }, // 쿠키의 생명 기간
+//     rolling: true
+//   })
+// );
 
 // 정적자원
 app.use(express.static(__dirname + "/public/assets"));
+// wGrid smoke test (no session filter)
+app.use("/wgrid-smoke", express.static(__dirname + "/public/wgrid-smoke"));
 
 // 세션필터
 const sessionFilter = require(`${basePath}/config/sessionFilter.js`);
@@ -86,6 +90,7 @@ app.use('/login', login);
 // 계좌관리
 const account = require(`${basePath}/routes/account.js`);
 app.use("/account", account);
+
 
 // 장부관리
 //const ledger = require("./routes/ledgerRoute.js");
