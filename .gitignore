@@ -8,6 +8,16 @@ lerna-debug.log*
 .pnpm-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
+/docs/md/**
+/docs/sql/**
+!/docs/md/.gitkeep
+!/docs/sql/.gitkeep
+
+# Eclipse files
+.metadata
+.project
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 # Runtime data
