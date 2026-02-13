@@ -1,0 +1,22 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Account {
+  id         String   @id @default(cuid())
+  user_id    String   @db.VarChar(191)
+  name       String   @db.VarChar(100)
+  balance    Decimal  @db.Decimal(20, 5)
+  currency   String   @default("KRW") @db.VarChar(10)
+  memo       String?  @db.VarChar(1000)
+  sort_order Int      @default(0)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([user_id, sort_order, id])
+}
