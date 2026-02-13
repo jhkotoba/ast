@@ -13,11 +13,25 @@ function normalizeString(value) {
 }
 
 function parseBalance(value) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) {
+  if (value === undefined || value === null || value === "") {
     return null;
   }
-  return parsed;
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+    return String(value);
+  }
+
+  const normalized = String(value).trim();
+  const numericPattern = /^[+-]?(?:\d+\.?\d*|\d*\.\d+)(?:[eE][+-]?\d+)?$/;
+
+  if (!numericPattern.test(normalized)) {
+    return null;
+  }
+
+  return normalized;
 }
 
 function parseSortOrder(value) {
@@ -44,7 +58,7 @@ function validateCreatePayload(body = {}) {
 
   const balance = parseBalance(body.balance);
   if (balance === null) {
-    fields.push({ path: "balance", reason: "must be a number" });
+    fields.push({ path: "balance", reason: "must be a numeric string" });
   } else {
     data.balance = balance;
   }
@@ -94,7 +108,7 @@ function validateUpdatePayload(body = {}) {
   if (hasOwn(body, "balance")) {
     const balance = parseBalance(body.balance);
     if (balance === null) {
-      fields.push({ path: "balance", reason: "must be a number" });
+      fields.push({ path: "balance", reason: "must be a numeric string" });
     } else {
       data.balance = balance;
     }
@@ -138,7 +152,7 @@ function serializeAccount(row) {
     id: row.id,
     user_id: row.user_id,
     name: row.name,
-    balance: Number(row.balance),
+    balance: String(row.balance),
     currency: row.currency,
     memo: row.memo,
     sort_order: row.sort_order,
@@ -167,7 +181,7 @@ function createAccountsRouter({ accountStore }) {
 
       res.status(200).json({
         data: {
-          items: result.items.map(serializeAccount),
+          list: result.list.map(serializeAccount),
           page: result.page,
           page_size: result.page_size,
           total_count: result.total_count,
@@ -198,7 +212,7 @@ function createAccountsRouter({ accountStore }) {
     }),
   );
 
-  router.put(
+  router.patch(
     "/:id",
     wrap(async (req, res) => {
       const payload = validateUpdatePayload(req.body || {});

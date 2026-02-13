@@ -15,13 +15,13 @@ function createFakeAccountStore() {
   return {
     async list(req, query) {
       const page = Number.parseInt(query && query.page, 10) || 1;
-      const size = Number.parseInt(query && query.size, 10) || 20;
-      const items = rows.filter((row) => row.user_id === req.auth.userId);
+      const pageSize = Number.parseInt(query && query.page_size, 10) || 20;
+      const list = rows.filter((row) => row.user_id === req.auth.userId);
       return {
-        items,
+        list,
         page,
-        page_size: size,
-        total_count: items.length,
+        page_size: pageSize,
+        total_count: list.length,
       };
     },
 
@@ -77,10 +77,21 @@ test("missing X-Auth-User-Id returns 401", async () => {
 
 test("with X-Auth-User-Id passes boundary", async () => {
   const app = createApp({ accountStore: createFakeAccountStore() });
-  const res = await request(app).get("/api/accounts").set("X-Auth-User-Id", "u1");
+  const res = await request(app)
+    .get("/api/accounts")
+    .set("X-Auth-User-Id", "u1")
+    .set("X-Auth-Provider", "oe");
 
   assert.equal(res.status, 200);
-  assert.equal(Array.isArray(res.body.data.items), true);
+  assert.equal(Array.isArray(res.body.data.list), true);
+});
+
+test("missing X-Auth-Provider returns 401", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app).get("/api/accounts").set("X-Auth-User-Id", "u1");
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, "UNAUTHORIZED");
 });
 
 test("create ignores user_id in body", async () => {
@@ -88,10 +99,11 @@ test("create ignores user_id in body", async () => {
   const res = await request(app)
     .post("/api/accounts")
     .set("X-Auth-User-Id", "owner-1")
+    .set("X-Auth-Provider", "oe")
     .send({
       user_id: "attacker",
       name: "wallet",
-      balance: 100,
+      balance: "100",
       currency: "KRW",
     });
 
@@ -105,9 +117,10 @@ test("cross-user resource access returns 404", async () => {
   const created = await request(app)
     .post("/api/accounts")
     .set("X-Auth-User-Id", "user-a")
+    .set("X-Auth-Provider", "oe")
     .send({
       name: "a-account",
-      balance: 50,
+      balance: "50",
       currency: "KRW",
     });
 
@@ -115,7 +128,8 @@ test("cross-user resource access returns 404", async () => {
 
   const foundByOther = await request(app)
     .get(`/api/accounts/${accountId}`)
-    .set("X-Auth-User-Id", "user-b");
+    .set("X-Auth-User-Id", "user-b")
+    .set("X-Auth-Provider", "oe");
 
   assert.equal(foundByOther.status, 404);
   assert.equal(foundByOther.body.error.code, "NOT_FOUND");

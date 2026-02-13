@@ -24,13 +24,13 @@ function toPositiveInt(value, fallback) {
 
 function normalizePagination(query = {}) {
   const page = toPositiveInt(query.page, DEFAULT_PAGE);
-  const size = Math.min(toPositiveInt(query.size, DEFAULT_SIZE), MAX_SIZE);
-  return { page, size };
+  const pageSize = Math.min(toPositiveInt(query.page_size, DEFAULT_SIZE), MAX_SIZE);
+  return { page, pageSize };
 }
 
 function parseOrderBy(sortRaw) {
   if (!sortRaw || typeof sortRaw !== "string") {
-    return [{ sort_order: "asc" }, { id: "desc" }];
+    return [{ id: "desc" }];
   }
 
   const entries = sortRaw
@@ -51,7 +51,7 @@ function parseOrderBy(sortRaw) {
     .filter(Boolean);
 
   if (entries.length === 0) {
-    return [{ sort_order: "asc" }, { id: "desc" }];
+    return [{ id: "desc" }];
   }
 
   return entries;
@@ -60,23 +60,23 @@ function parseOrderBy(sortRaw) {
 function createPrismaAccountStore(prismaClient) {
   return {
     async list(req, query) {
-      const { page, size } = normalizePagination(query);
+      const { page, pageSize } = normalizePagination(query);
       const where = ownedWhere(req);
 
-      const [items, totalCount] = await Promise.all([
+      const [list, totalCount] = await Promise.all([
         prismaClient.account.findMany({
           where,
           orderBy: parseOrderBy(query && query.sort),
-          skip: (page - 1) * size,
-          take: size,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
         }),
         prismaClient.account.count({ where }),
       ]);
 
       return {
-        items,
+        list,
         page,
-        page_size: size,
+        page_size: pageSize,
         total_count: totalCount,
       };
     },
