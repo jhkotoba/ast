@@ -25,9 +25,16 @@ class ValidationError extends HttpError {
   }
 }
 
+class ConflictError extends HttpError {
+  constructor(message = "Conflict") {
+    super(409, "CONFLICT", message);
+  }
+}
+
 module.exports = {
   HttpError,
   NotFoundError,
   UnauthorizedError,
   ValidationError,
+  ConflictError,
 };

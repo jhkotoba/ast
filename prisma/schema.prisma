@@ -26,3 +26,82 @@ model Account {
   @@index([user_id, sort_order, id], map: "IX_ACCOUNT_USER_ORDER")
   @@map("ACCOUNT")
 }
+
+model Tag {
+  id            BigInt                   @id @default(autoincrement()) @map("TAG_ID") @db.BigInt
+  user_id       BigInt                   @map("USER_ID") @db.BigInt
+  tag_name      String                   @map("TAG_NAME") @db.VarChar(50)
+  display_order Int                      @default(0) @map("DISPLAY_ORDER")
+  is_active     Boolean                  @default(true) @map("IS_ACTIVE")
+  created_at    DateTime                 @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  updated_at    DateTime                 @updatedAt @map("UPDATED_AT") @db.DateTime(3)
+  tx_tags       LedgerTransactionTag[]   @relation("tx_tag_to_tag")
+  template_tags TransactionTemplateTag[] @relation("template_tag_to_tag")
+
+  @@unique([user_id, tag_name], map: "UK_TAG_USER_NAME")
+  @@index([user_id, is_active], map: "IX_TAG_USER_ACTIVE")
+  @@map("TAG")
+}
+
+model LedgerTransaction {
+  id               BigInt                 @id @default(autoincrement()) @map("TRANSACTION_ID") @db.BigInt
+  user_id          BigInt                 @map("USER_ID") @db.BigInt
+  flow_type        String                 @map("FLOW_TYPE") @db.VarChar(10)
+  transaction_date DateTime               @map("TRANSACTION_DATE") @db.Date
+  amount           Decimal                @map("AMOUNT") @db.Decimal(20, 5)
+  currency_code    String                 @default("KRW") @map("CURRENCY_CODE") @db.VarChar(10)
+  title            String?                @map("TITLE") @db.VarChar(200)
+  memo             String?                @map("MEMO") @db.VarChar(1000)
+  is_active        Boolean                @default(true) @map("IS_ACTIVE")
+  created_at       DateTime               @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  updated_at       DateTime               @updatedAt @map("UPDATED_AT") @db.DateTime(3)
+  tags             LedgerTransactionTag[] @relation("tx_tag_to_tx")
+
+  @@index([user_id, transaction_date, id], map: "IX_TX_USER_DATE")
+  @@index([user_id, flow_type, transaction_date], map: "IX_TX_USER_FLOW_DATE")
+  @@index([user_id, is_active, transaction_date], map: "IX_TX_USER_ACTIVE")
+  @@map("LEDGER_TRANSACTION")
+}
+
+model LedgerTransactionTag {
+  id             BigInt            @id @default(autoincrement()) @map("TRANSACTION_TAG_ID") @db.BigInt
+  user_id        BigInt            @map("USER_ID") @db.BigInt
+  transaction_id BigInt            @map("TRANSACTION_ID") @db.BigInt
+  tag_id         BigInt            @map("TAG_ID") @db.BigInt
+  created_at     DateTime          @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  transaction    LedgerTransaction @relation("tx_tag_to_tx", fields: [transaction_id], references: [id], onDelete: Cascade)
+  tag            Tag               @relation("tx_tag_to_tag", fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([transaction_id, tag_id], map: "UK_TX_TAG")
+  @@index([user_id, tag_id, transaction_id], map: "IX_TXTAG_USER_TAG")
+  @@map("LEDGER_TRANSACTION_TAG")
+}
+
+model TransactionTemplate {
+  id            BigInt                   @id @default(autoincrement()) @map("TEMPLATE_ID") @db.BigInt
+  user_id       BigInt                   @map("USER_ID") @db.BigInt
+  template_name String                   @map("TEMPLATE_NAME") @db.VarChar(100)
+  default_title String?                  @map("DEFAULT_TITLE") @db.VarChar(200)
+  default_memo  String?                  @map("DEFAULT_MEMO") @db.VarChar(1000)
+  is_active     Boolean                  @default(true) @map("IS_ACTIVE")
+  created_at    DateTime                 @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  updated_at    DateTime                 @updatedAt @map("UPDATED_AT") @db.DateTime(3)
+  tags          TransactionTemplateTag[] @relation("template_tag_to_template")
+
+  @@index([user_id, is_active], map: "IX_TEMPLATE_USER_ACTIVE")
+  @@map("TRANSACTION_TEMPLATE")
+}
+
+model TransactionTemplateTag {
+  id          BigInt              @id @default(autoincrement()) @map("TEMPLATE_TAG_ID") @db.BigInt
+  user_id     BigInt              @map("USER_ID") @db.BigInt
+  template_id BigInt              @map("TEMPLATE_ID") @db.BigInt
+  tag_id      BigInt              @map("TAG_ID") @db.BigInt
+  created_at  DateTime            @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  template    TransactionTemplate @relation("template_tag_to_template", fields: [template_id], references: [id], onDelete: Cascade)
+  tag         Tag                 @relation("template_tag_to_tag", fields: [tag_id], references: [id], onDelete: Cascade)
+
+  @@unique([template_id, tag_id], map: "UK_TEMPLATE_TAG")
+  @@index([user_id, tag_id, template_id], map: "IX_TEMPLATETAG_USER_TAG")
+  @@map("TRANSACTION_TEMPLATE_TAG")
+}

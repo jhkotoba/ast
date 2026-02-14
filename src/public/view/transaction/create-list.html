@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>거래등록/목록</title>
+  <link rel="stylesheet" href="/assets/library/wgrid/wgrid_white.min.css" type="text/css" />
+  <style>
+    :root { --bg:#eef2f6; --panel:#fff; --line:#d9e2ec; --text:#1f2937; --sub:#64748b; --brand:#0f172a; --sidebar:#f8fafc; }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:"Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--text); }
+    .topbar { height:64px; background:linear-gradient(90deg,#e2e8f0,#f1f5f9); border-bottom:1px solid var(--line); }
+    .layout { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 64px); }
+    .sidebar { background:var(--sidebar); border-right:1px solid var(--line); padding:18px 12px; }
+    .sidebar h2 { margin:0 0 12px; font-size:13px; color:var(--sub); font-weight:600; }
+    .menu { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+    .menu a { display:block; padding:10px 12px; border-radius:8px; text-decoration:none; color:#0f172a; font-weight:600; background:#fff; border:1px solid #e2e8f0; }
+    .menu a.active { background:#dbeafe; border-color:#bfdbfe; }
+    .content { padding:18px; }
+    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
+    .page-title { margin:0 0 12px; font-size:20px; font-weight:700; }
+    .toolbar { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
+    button { border:1px solid #cbd5e1; background:#fff; color:#111827; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:13px; font-weight:600; }
+    button.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
+    #transaction { border:1px solid #e2e8f0; border-radius:10px; min-height:560px; padding:8px; background:#fff; }
+    .status { margin-top:10px; min-height:18px; font-size:13px; color:#334155; }
+    @media (max-width:1024px) { .layout { grid-template-columns:1fr; } .sidebar { border-right:0; border-bottom:1px solid var(--line);} }
+  </style>
+</head>
+<body>
+  <div class="topbar"></div>
+  <div class="layout">
+    <aside class="sidebar">
+      <h2>메뉴</h2>
+      <ul class="menu">
+        <li><a href="/account/account">계좌관리</a></li>
+        <li><a href="/tag/tag">태그관리</a></li>
+        <li><a href="/template/template">템플릿관리</a></li>
+        <li><a href="/transaction/create-list" class="active">거래등록/목록</a></li>
+        <li><a href="/transaction/update-delete">거래수정/삭제</a></li>
+      </ul>
+    </aside>
+    <main class="content">
+      <section class="panel">
+        <h1 class="page-title">거래 등록/목록</h1>
+        <div class="toolbar">
+          <button id="btnAdd">행 추가</button>
+          <button id="btnCancel">선택 취소</button>
+          <button id="btnApply" class="primary">신규 등록 적용</button>
+        </div>
+        <div id="transaction"></div>
+        <div id="status" class="status"></div>
+      </section>
+    </main>
+  </div>
+  <script type="module" src="/assets/library/wgrid/wgrid.esm.min.js"></script>
+  <script type="module" src="/script/transaction/create-list.js"></script>
+</body>
+</html>
+

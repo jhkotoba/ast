@@ -66,7 +66,10 @@ export const defaultMenuList = [
 	// 2레벨(페이지)
 	{ menuNo: 11, menuNm: '메인', menuUrl: '/', menuLv: 2, menuSeq: 1, groupNo: 1 },
 	{ menuNo: 12, menuNm: '계좌관리', menuUrl: '/account/account', menuLv: 2, menuSeq: 2, groupNo: 1 },
-	{ menuNo: 13, menuNm: '계좌내역', menuUrl: '/account/record', menuLv: 2, menuSeq: 3, groupNo: 1 },
+	{ menuNo: 13, menuNm: '태그관리', menuUrl: '/tag/tag', menuLv: 2, menuSeq: 3, groupNo: 1 },
+	{ menuNo: 14, menuNm: '템플릿관리', menuUrl: '/template/template', menuLv: 2, menuSeq: 4, groupNo: 1 },
+	{ menuNo: 15, menuNm: '거래등록/목록', menuUrl: '/transaction/create-list', menuLv: 2, menuSeq: 5, groupNo: 1 },
+	{ menuNo: 16, menuNm: '거래수정/삭제', menuUrl: '/transaction/update-delete', menuLv: 2, menuSeq: 6, groupNo: 1 },
 ];
 
 export const createDefaultMenu = () => createMenu(defaultMenuList);

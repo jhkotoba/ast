@@ -2,16 +2,25 @@ const path = require("path");
 const express = require("express");
 
 const { createPrismaAccountStore } = require("./db/accountStore");
+const { createPrismaTagStore } = require("./db/tagStore");
+const { createPrismaTemplateStore } = require("./db/templateStore");
+const { createPrismaTransactionStore } = require("./db/transactionStore");
 const { prisma } = require("./db/prisma");
 const { errorHandler } = require("./errors/errorHandler");
 const { NotFoundError } = require("./errors/httpErrors");
 const { requireAuth } = require("./middlewares/requireAuth");
 const createAccountsRouter = require("./routes/accounts");
+const createTagsRouter = require("./routes/tags");
+const createTemplatesRouter = require("./routes/templates");
+const createTransactionsRouter = require("./routes/transactions");
 const healthRouter = require("./routes/health");
 
 function createApp(options = {}) {
   const app = express();
   const accountStore = options.accountStore || createPrismaAccountStore(prisma);
+  const tagStore = options.tagStore || createPrismaTagStore(prisma);
+  const templateStore = options.templateStore || createPrismaTemplateStore(prisma);
+  const transactionStore = options.transactionStore || createPrismaTransactionStore(prisma);
   const publicRoot = path.resolve(__dirname, "../public");
 
   app.use(express.json());
@@ -29,10 +38,29 @@ function createApp(options = {}) {
     res.sendFile(path.join(publicRoot, "view", "account", "account.html"));
   });
 
+  app.get("/tag/tag", (req, res) => {
+    res.sendFile(path.join(publicRoot, "view", "tag", "tag.html"));
+  });
+
+  app.get("/template/template", (req, res) => {
+    res.sendFile(path.join(publicRoot, "view", "template", "template.html"));
+  });
+
+  app.get("/transaction/create-list", (req, res) => {
+    res.sendFile(path.join(publicRoot, "view", "transaction", "create-list.html"));
+  });
+
+  app.get("/transaction/update-delete", (req, res) => {
+    res.sendFile(path.join(publicRoot, "view", "transaction", "update-delete.html"));
+  });
+
   app.use("/health", healthRouter);
 
   app.use("/api", requireAuth);
   app.use("/api/accounts", createAccountsRouter({ accountStore }));
+  app.use("/api/tags", createTagsRouter({ tagStore }));
+  app.use("/api/transaction_templates", createTemplatesRouter({ templateStore }));
+  app.use("/api/transactions", createTransactionsRouter({ transactionStore }));
 
   app.use((req, res, next) => {
     next(new NotFoundError("Not Found"));
