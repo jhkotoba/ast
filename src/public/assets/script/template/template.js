@@ -1,9 +1,4 @@
-import { showToast } from "/script/common/toast.js";
-
-const AUTH_HEADERS = {
-  "X-Auth-User-Id": "1",
-  "X-Auth-Provider": "oe",
-};
+import { showToast } from "/ast/script/common/toast.js";
 
 const mappingResultEl = document.getElementById("mappingResult");
 const templateIdEl = document.getElementById("templateId");
@@ -34,7 +29,6 @@ async function apiRequest(method, url, body) {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...AUTH_HEADERS,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -100,7 +94,7 @@ const templateGrid = new window.wgrid("template", {
       page_size: String(paging.pageSize || 20),
       sort: "template_id:desc",
     });
-    const response = await apiRequest("GET", `/api/transaction_templates?${query.toString()}`);
+    const response = await apiRequest("GET", `/ast-api/transaction_templates?${query.toString()}`);
     const list = (response.data.list || []).map((item) => ({
       ...item,
       checked: false,
@@ -142,16 +136,16 @@ async function applyChanges() {
   try {
     for (const row of inserts) {
       const payload = normalizeTemplatePayload(row, true);
-      await apiRequest("POST", "/api/transaction_templates", payload);
+      await apiRequest("POST", "/ast-api/transaction_templates", payload);
     }
 
     for (const row of updates) {
       const payload = normalizeTemplatePayload(row, false);
-      await apiRequest("PATCH", `/api/transaction_templates/${row.template_id}`, payload);
+      await apiRequest("PATCH", `/ast-api/transaction_templates/${row.template_id}`, payload);
     }
 
     for (const row of deletes) {
-      await apiRequest("DELETE", `/api/transaction_templates/${row.template_id}`);
+      await apiRequest("DELETE", `/ast-api/transaction_templates/${row.template_id}`);
     }
 
     await reloadList();
@@ -182,7 +176,7 @@ function parseTagIdsText() {
 
 async function loadMappings() {
   const templateId = getTemplateIdOrThrow();
-  const response = await apiRequest("GET", `/api/transaction_templates/${templateId}/tags?page_no=1&page_size=100`);
+  const response = await apiRequest("GET", `/ast-api/transaction_templates/${templateId}/tags?page_no=1&page_size=100`);
   setMappingResult(JSON.stringify(response.data.list || [], null, 2));
 }
 
@@ -192,7 +186,7 @@ async function addMapping() {
   if (!tagId) {
     throw new Error("tag_id를 입력하세요.");
   }
-  await apiRequest("POST", `/api/transaction_templates/${templateId}/tags`, { tag_id: tagId });
+  await apiRequest("POST", `/ast-api/transaction_templates/${templateId}/tags`, { tag_id: tagId });
   await loadMappings();
 }
 
@@ -202,14 +196,14 @@ async function removeMapping() {
   if (!tagId) {
     throw new Error("tag_id를 입력하세요.");
   }
-  await apiRequest("DELETE", `/api/transaction_templates/${templateId}/tags/${tagId}`);
+  await apiRequest("DELETE", `/ast-api/transaction_templates/${templateId}/tags/${tagId}`);
   await loadMappings();
 }
 
 async function replaceMappings() {
   const templateId = getTemplateIdOrThrow();
   const tagIds = parseTagIdsText();
-  await apiRequest("PATCH", `/api/transaction_templates/${templateId}/tags`, { tag_ids: tagIds });
+  await apiRequest("PATCH", `/ast-api/transaction_templates/${templateId}/tags`, { tag_ids: tagIds });
   await loadMappings();
 }
 
@@ -292,4 +286,3 @@ window.addEventListener("DOMContentLoaded", async () => {
     setStatus(error.message || "조회 실패", true);
   }
 });
-

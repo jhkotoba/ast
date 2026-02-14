@@ -1,4 +1,4 @@
-import { createMenu, defaultMenuList } from "/script/common/menu.js";
+import { createMenu, defaultMenuList } from "/ast/script/common/menu.js";
 
 function bindMenuNavigation(asideEl) {
   asideEl.addEventListener("click", (event) => {

@@ -1,4 +1,4 @@
-import { showToast } from "/script/common/toast.js";
+import { showToast } from "/ast/script/common/toast.js";
 import {
   ACCOUNT_TYPE_OPTIONS,
   ACCOUNT_TYPE_TEXT_MAP,
@@ -6,12 +6,7 @@ import {
   CURRENCY_CODE_OPTIONS,
   CURRENCY_CODE_TEXT_MAP,
   CURRENCY_CODE_VALUE_SET,
-} from "/script/common/codebook.js";
-
-const AUTH_HEADERS = {
-  "X-Auth-User-Id": "1",
-  "X-Auth-Provider": "oe",
-};
+} from "/ast/script/common/codebook.js";
 
 const btnAdd = document.getElementById("btnAdd");
 const btnEdit = document.getElementById("btnEdit");
@@ -28,7 +23,6 @@ async function apiRequest(method, url, body) {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...AUTH_HEADERS,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -221,7 +215,7 @@ const account = new window.wgrid("account", {
       sort: "account_id:desc",
     });
 
-    const response = await apiRequest("GET", `/api/accounts?${query.toString()}`);
+    const response = await apiRequest("GET", `/ast-api/accounts?${query.toString()}`);
     const list = (response.data.list || []).map((item) => ({
       ...item,
       checked: false,
@@ -269,16 +263,16 @@ async function applyChanges() {
   try {
     for (const row of inserts) {
       const payload = normalizeWritePayload(row, { requireAccountName: true, requireBalance: true });
-      await apiRequest("POST", "/api/accounts", payload);
+      await apiRequest("POST", "/ast-api/accounts", payload);
     }
 
     for (const row of updates) {
       const payload = normalizeWritePayload(row, { requireAccountName: false, requireBalance: false });
-      await apiRequest("PATCH", `/api/accounts/${row.account_id}`, payload);
+      await apiRequest("PATCH", `/ast-api/accounts/${row.account_id}`, payload);
     }
 
     for (const row of deletes) {
-      await apiRequest("DELETE", `/api/accounts/${row.account_id}`);
+      await apiRequest("DELETE", `/ast-api/accounts/${row.account_id}`);
     }
 
     await reloadList();

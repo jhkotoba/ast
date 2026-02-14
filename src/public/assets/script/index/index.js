@@ -1,2 +1,1 @@
-﻿import "/script/common/layout.js";
-
+import "/ast/script/common/layout.js";

@@ -1,9 +1,4 @@
-import { showToast } from "/script/common/toast.js";
-
-const AUTH_HEADERS = {
-  "X-Auth-User-Id": "1",
-  "X-Auth-Provider": "oe",
-};
+import { showToast } from "/ast/script/common/toast.js";
 
 const btnAdd = document.getElementById("btnAdd");
 const btnCancel = document.getElementById("btnCancel");
@@ -18,7 +13,6 @@ async function apiRequest(method, url, body) {
     method,
     headers: {
       "Content-Type": "application/json",
-      ...AUTH_HEADERS,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
@@ -127,7 +121,7 @@ const txGrid = new window.wgrid("transaction", {
       page_size: String(paging.pageSize || 20),
       sort: "transaction_id:desc",
     });
-    const response = await apiRequest("GET", `/api/transactions?${query.toString()}`);
+    const response = await apiRequest("GET", `/ast-api/transactions?${query.toString()}`);
     const list = (response.data.list || []).map((item) => ({
       ...item,
       checked: false,
@@ -174,7 +168,7 @@ async function applyCreates() {
 
   for (const row of inserts) {
     const payload = normalizeCreatePayload(row);
-    await apiRequest("POST", "/api/transactions", payload);
+    await apiRequest("POST", "/ast-api/transactions", payload);
   }
 }
 
@@ -206,4 +200,3 @@ window.addEventListener("DOMContentLoaded", async () => {
     setStatus(error.message || "조회 실패", true);
   }
 });
-
