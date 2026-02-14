@@ -105,3 +105,22 @@ model TransactionTemplateTag {
   @@index([user_id, tag_id, template_id], map: "IX_TEMPLATETAG_USER_TAG")
   @@map("TRANSACTION_TEMPLATE_TAG")
 }
+
+model Subscription {
+  id                BigInt    @id @default(autoincrement()) @map("SUBSCRIPTION_ID") @db.BigInt
+  user_id           BigInt    @map("USER_ID") @db.BigInt
+  subscription_name String    @map("SUBSCRIPTION_NAME") @db.VarChar(100)
+  billing_period    String    @map("BILLING_PERIOD") @db.VarChar(10)
+  billing_day       Int       @map("BILLING_DAY")
+  amount            Decimal   @map("AMOUNT") @db.Decimal(20, 5)
+  currency_code     String    @default("KRW") @map("CURRENCY_CODE") @db.VarChar(10)
+  start_date        DateTime  @map("START_DATE") @db.Date
+  end_date          DateTime? @map("END_DATE") @db.Date
+  memo              String?   @map("MEMO") @db.VarChar(1000)
+  is_active         Boolean   @default(true) @map("IS_ACTIVE")
+  created_at        DateTime  @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  updated_at        DateTime  @updatedAt @map("UPDATED_AT") @db.DateTime(3)
+
+  @@index([user_id, is_active], map: "IX_SUB_USER_ACTIVE")
+  @@map("SUBSCRIPTION")
+}

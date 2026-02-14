@@ -185,6 +185,14 @@ main {
   flex-wrap: wrap;
 }
 
+.toolbar-title {
+  margin-right: auto;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--brand);
+  align-self: center;
+}
+
 .grid-host {
   border: 1px solid #e2e8f0;
   border-radius: 4px;

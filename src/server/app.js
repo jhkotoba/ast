@@ -5,11 +5,13 @@ const { createPrismaAccountStore } = require("./db/accountStore");
 const { createPrismaTagStore } = require("./db/tagStore");
 const { createPrismaTemplateStore } = require("./db/templateStore");
 const { createPrismaTransactionStore } = require("./db/transactionStore");
+const { createPrismaSubscriptionStore } = require("./db/subscriptionStore");
 const { prisma } = require("./db/prisma");
 const { errorHandler } = require("./errors/errorHandler");
 const { NotFoundError } = require("./errors/httpErrors");
 const { requireAuth } = require("./middlewares/requireAuth");
 const createAccountsRouter = require("./routes/accounts");
+const createSubscriptionsRouter = require("./routes/subscriptions");
 const createTagsRouter = require("./routes/tags");
 const createTemplatesRouter = require("./routes/templates");
 const createTransactionsRouter = require("./routes/transactions");
@@ -21,6 +23,7 @@ function createApp(options = {}) {
   const tagStore = options.tagStore || createPrismaTagStore(prisma);
   const templateStore = options.templateStore || createPrismaTemplateStore(prisma);
   const transactionStore = options.transactionStore || createPrismaTransactionStore(prisma);
+  const subscriptionStore = options.subscriptionStore || createPrismaSubscriptionStore(prisma);
   const publicRoot = path.resolve(__dirname, "../public");
 
   app.use(express.json());
@@ -54,6 +57,10 @@ function createApp(options = {}) {
     res.sendFile(path.join(publicRoot, "view", "transaction", "update-delete.html"));
   });
 
+  app.get("/subscription/subscription", (req, res) => {
+    res.sendFile(path.join(publicRoot, "view", "subscription", "subscription.html"));
+  });
+
   app.use("/health", healthRouter);
 
   app.use("/api", requireAuth);
@@ -61,6 +68,7 @@ function createApp(options = {}) {
   app.use("/api/tags", createTagsRouter({ tagStore }));
   app.use("/api/transaction_templates", createTemplatesRouter({ templateStore }));
   app.use("/api/transactions", createTransactionsRouter({ transactionStore }));
+  app.use("/api/subscriptions", createSubscriptionsRouter({ subscriptionStore }));
 
   app.use((req, res, next) => {
     next(new NotFoundError("Not Found"));

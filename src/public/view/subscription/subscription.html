@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>거래수정/삭제</title>
+  <title>구독관리</title>
   <link rel="stylesheet" href="/style/common.css" type="text/css" />
   <link rel="stylesheet" href="/assets/library/wgrid/wgrid_white.min.css" type="text/css" />
 </head>
@@ -18,15 +18,16 @@
     <div class="main">
       <main class="content">
         <section class="page-panel">
-          <h1 class="page-title">거래 수정/삭제</h1>
+          <h1 class="page-title">구독관리</h1>
           <div class="toolbar">
-            <span class="toolbar-title">▣ 거래 목록</span>
+            <span class="toolbar-title">▣ 구독 목록</span>
+            <button id="btnAdd">행 추가</button>
             <button id="btnEdit">선택 수정</button>
             <button id="btnRemove">선택 삭제</button>
             <button id="btnCancel">선택 취소</button>
             <button id="btnApply" class="primary">적용</button>
           </div>
-          <div id="transaction" class="grid-host"></div>
+          <div id="subscription" class="grid-host"></div>
         </section>
       </main>
     </div>
@@ -35,7 +36,6 @@
   <div id="blind" class="blind"></div>
   <script type="module" src="/script/common/layout.js"></script>
   <script type="module" src="/assets/library/wgrid/wgrid.esm.min.js"></script>
-  <script type="module" src="/script/transaction/update-delete.js"></script>
+  <script type="module" src="/script/subscription/subscription.js"></script>
 </body>
 </html>
-
