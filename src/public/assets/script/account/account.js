@@ -1,194 +1,256 @@
-import { sender } from "/script/common/sender.js";
-import { isEmpty } from "/script/common/validation.js";
-import { modal } from "/script/common/modal.js";
+const AUTH_HEADERS = {
+  "X-Auth-User-Id": "1",
+  "X-Auth-Provider": "oe",
+};
 
-// 공동코드 맵핑
-const mappingCode = __code.reduce((acc, curr) => {
-    acc[curr.code] = curr.codeNm;
-    return acc;
-}, {});
+const statusEl = document.getElementById("status");
+const btnAdd = document.getElementById("btnAdd");
+const btnEdit = document.getElementById("btnEdit");
+const btnRemove = document.getElementById("btnRemove");
+const btnCancel = document.getElementById("btnCancel");
+const btnApply = document.getElementById("btnApply");
 
-// 페이지 로드 완료 실행 로직
-window.addEventListener('DOMContentLoaded', function(event){
-    
-    // 계좌목록 세팅
-    initAcctList();
+function setStatus(message, isError = false) {
+  statusEl.textContent = message;
+  statusEl.style.color = isError ? "#b91c1c" : "#334155";
+}
+
+async function apiRequest(method, url, body) {
+  const response = await fetch(url, {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      ...AUTH_HEADERS,
+    },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  const data = await response.json();
+  if (!response.ok) {
+    const reason = data && data.error && data.error.message ? data.error.message : `HTTP ${response.status}`;
+    throw new Error(reason);
+  }
+  return data;
+}
+
+function toBoolean(value, fallback = true) {
+  if (value === undefined || value === null || value === "") {
+    return fallback;
+  }
+  if (typeof value === "boolean") {
+    return value;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  return ["1", "true", "y", "yes"].includes(normalized);
+}
+
+function toNullableText(value) {
+  if (value === undefined || value === null || value === "") {
+    return null;
+  }
+  return String(value);
+}
+
+function normalizeWritePayload(row, { requireAccountName, requireBalance }) {
+  const accountName = String(row.account_name || "").trim();
+  if (requireAccountName && accountName.length === 0) {
+    throw new Error("계좌 별칭은 필수입니다.");
+  }
+
+  const rawBalance = row.current_balance;
+  const currentBalance =
+    rawBalance === undefined || rawBalance === null || rawBalance === "" ? null : String(rawBalance).trim();
+
+  if (requireBalance && !currentBalance) {
+    throw new Error("현재 잔액은 필수입니다.");
+  }
+
+  if (currentBalance && Number.isNaN(Number(currentBalance))) {
+    throw new Error("현재 잔액은 숫자여야 합니다.");
+  }
+
+  const displayOrderRaw = row.display_order;
+  const displayOrder =
+    displayOrderRaw === undefined || displayOrderRaw === null || displayOrderRaw === ""
+      ? 0
+      : Number.parseInt(displayOrderRaw, 10);
+
+  if (!Number.isFinite(displayOrder)) {
+    throw new Error("정렬 순서는 정수여야 합니다.");
+  }
+
+  const payload = {
+    account_name: accountName,
+    account_type: String(row.account_type || "ETC").trim() || "ETC",
+    institution_name: toNullableText(row.institution_name),
+    account_no_masked: toNullableText(row.account_no_masked),
+    currency_code: String(row.currency_code || "KRW").trim() || "KRW",
+    current_balance: currentBalance,
+    display_order: displayOrder,
+    is_active: toBoolean(row.is_active, true),
+  };
+
+  if (row.balance_updated_at !== undefined && row.balance_updated_at !== null && row.balance_updated_at !== "") {
+    payload.balance_updated_at = row.balance_updated_at;
+  }
+
+  return payload;
+}
+
+const account = new window.wgrid("account", {
+  fields: [
+    { title: null, element: "checkbox", name: "checked", edit: "checkbox", width: "3%", align: "center" },
+    { title: "계좌 별칭", element: "text", name: "account_name", edit: "text", width: "14%" },
+    { title: "유형", element: "text", name: "account_type", edit: "text", width: "10%" },
+    { title: "기관명", element: "text", name: "institution_name", edit: "text", width: "12%" },
+    { title: "마스킹 번호", element: "text", name: "account_no_masked", edit: "text", width: "10%" },
+    { title: "통화코드", element: "text", name: "currency_code", edit: "text", width: "8%" },
+    { title: "현재 잔액", element: "text", name: "current_balance", edit: "text", width: "10%" },
+    { title: "잔액 업데이트 시각", element: "text", name: "balance_updated_at", edit: "text", width: "12%" },
+    { title: "정렬 순서", element: "text", name: "display_order", edit: "text", width: "8%" },
+    {
+      title: "사용여부",
+      element: "text",
+      name: "is_active",
+      edit: "select",
+      width: "8%",
+      data: {
+        mapping: { true: "true", false: "false" },
+        select: {
+          list: [
+            { value: "true", text: "true" },
+            { value: "false", text: "false" },
+          ],
+        },
+      },
+    },
+    { title: "등록일시", element: "text", name: "created_at", width: "12%" },
+    { title: "수정일시", element: "text", name: "updated_at", width: "12%" },
+  ],
+  option: {
+    isPaging: true,
+    pagingMode: "server",
+    style: {
+      height: 560,
+      overflow: { y: "auto", x: "auto" },
+      row: { cursor: "default" },
+    },
+  },
+  data: {
+    insert: {
+      checked: false,
+      account_type: "ETC",
+      currency_code: "KRW",
+      display_order: 0,
+      is_active: "true",
+    },
+  },
+  search: async (params = {}) => {
+    const paging = params.paging || { pageNo: 1, pageSize: 20, pageBlock: 5 };
+    const query = new URLSearchParams({
+      page_no: String(paging.pageNo || 1),
+      page_size: String(paging.pageSize || 20),
+      sort: "account_id:desc",
+    });
+
+    const response = await apiRequest("GET", `/api/accounts?${query.toString()}`);
+    const list = (response.data.list || []).map((item) => ({
+      ...item,
+      checked: false,
+      is_active: String(item.is_active),
+    }));
+
+    return {
+      list,
+      param: {
+        paging: {
+          pageNo: response.data.page_no,
+          pageSize: response.data.page_size,
+          pageBlock: paging.pageBlock || 5,
+          totalCount: response.data.total_count,
+        },
+      },
+    };
+  },
 });
 
-// 은행코드 목록
-const bankCd = __code.filter(f => f.groupCd === 'GRP_CD_BANK');
-// 계좌유형코드 목록
-const acctTpCd = __code.filter(f => f.groupCd === 'GRP_CD_ACCT_TYPE');
-__code = undefined;
+async function reloadList() {
+  const result = await account.search();
+  account.setData(result.list, result.param);
+}
 
-// 계좌목록 그리드 선언
-const account = new wGrid('account', {
-    fields: [
-        {title: null, element:'checkbox', name: 'check', edit: 'checkbox', width:'3%', align:'center'},
-        {title:'번호', element: 'text', name: 'acctNo', width: '3%'},
-        {title:'은행', element: 'text', name: 'bankCd', edit:'select', width: '10%', 
-            data: {mapping: mappingCode, select: {list: bankCd, value: 'code', text: 'codeNm'}}
-        },
-        {title:'계좌유형', element: 'text', name: 'acctTpCd', edit: 'select', width: '8%',
-            data: {mapping: mappingCode, select: {list: acctTpCd, value: 'code', text: 'codeNm'}}
-        },
-        {title:'계좌명', element: 'text', name: 'acctNm', edit: 'text', width: '16%'},
-        {title:'계좌번호', element: 'text', name: 'acctNum', edit: 'text', width: '15%'},        
-        {title:'순번', element: 'number', name: 'acctSeq', edit:'text', width: '5%'},
-        {title:'사용여부', element: 'text', name: 'useYn', edit:'select', width: '6%', 
-            data: {
-                mapping: {'Y': '사용', 'N': '미사용'},
-                select: {list: [{value:'Y', text:'사용'}, {value:'N', text:'미사용'}]}
-            },
-        },
-        {title:'등록자', element: 'text', name: 'insNo', width: '7%'},
-        {title:'등록일시', element: 'text', name: 'insDttm', width: '10%'},
-        {title:'수정자', element: 'text', name: 'uptNo', width: '7%'},
-        {title:'수정일시', element: 'text', name: 'uptDttm', width: '10%'}                
-    ],
-    option: { 
-        isPaging: true,
-        isDblClick: true,
-        style: {
-            height: (window.innerHeight - 205), overflow: { y: 'scroll'},
-            row:{
-                cursor: 'pointer'
-            }
-        },  
-        data: { insert: {acctNum: '', acctNm: '', bankCd:'', acctSeq: 0} }
-    },
-    search: async (params) => {
+async function applyChanges() {
+  const inserts = account.getInsertData();
+  const updates = account.getUpdateData();
+  const deletes = account.getDeleteData();
 
-        // 기본값 세팅
-        if(params === undefined) params = {};
-        if(params.paging === undefined){
-            params.paging = {pageNo: 1, pageSize: 50, pageBlock: 10, totalCount: 0};
-        }
+  if (inserts.length === 0 && updates.length === 0 && deletes.length === 0) {
+    setStatus("변경사항이 없습니다.");
+    return;
+  }
 
-        // 계좌목록 조회
-        let response = await sender.request({url: '/account/getAccountList', body: params});
+  if (!window.confirm("변경사항을 반영할까요?")) {
+    return;
+  }
 
-        // 응답 성공 시
-        if(response.resultCode == 'SUCCESS'){
-            response.data.list.forEach(item => item.check = false);
-            return response.data;
-        // 응답 실패 시
-        }else{
-            console.error(response.message);
-            alert(response.message);
-            // 빈값 반환
-            return {list:[], params:{}};
-        }
-    },
-    event: {
-        dblclick: (e, data) => data._state === 'SELECT' ? acctModal.open(data) : null
+  try {
+    for (const row of inserts) {
+      const payload = normalizeWritePayload(row, { requireAccountName: true, requireBalance: true });
+      await apiRequest("POST", "/api/accounts", payload);
     }
+
+    for (const row of updates) {
+      const payload = normalizeWritePayload(row, { requireAccountName: false, requireBalance: false });
+      await apiRequest("PATCH", `/api/accounts/${row.account_id}`, payload);
+    }
+
+    for (const row of deletes) {
+      await apiRequest("DELETE", `/api/accounts/${row.account_id}`);
+    }
+
+    await reloadList();
+    setStatus(`반영 완료: 추가 ${inserts.length}, 수정 ${updates.length}, 삭제 ${deletes.length}`);
+  } catch (error) {
+    setStatus(error.message || "반영 실패", true);
+  }
+}
+
+btnAdd.addEventListener("click", () => {
+  account.prependRow();
+  setStatus("행을 추가했습니다.");
 });
 
-// 계좌 상세팝업
-const acctModal = modal.create('acctModal', 'acctClose', {
-    option: {
-        dimensions: {
-            height: '500px',
-            width: '700px'
-        }
-    },
-    beforeOpenFn: function(data){
-
-        // 계좌상세 모달 데이터 비우기
-        cleanAcctModal();
-        // 계좌상세 모달 데이터 세팅
-        setAcctModal(data);
-    }
+btnEdit.addEventListener("click", () => {
+  account.modifyRowCheckedElement("checked");
+  setStatus("선택 행을 수정 모드로 전환했습니다.");
 });
 
-/**
- * 계좌목록 세팅
- */
-function initAcctList(){
-    // 계좌목록 조회
-    account.search().then(data => account.setData(data.list, data.params));
+btnRemove.addEventListener("click", () => {
+  if (!window.confirm("선택 행을 삭제 대상으로 표시할까요?")) {
+    return;
+  }
+  account.removeRowCheckedElement("checked");
+  setStatus("선택 행을 삭제 대상으로 표시했습니다.");
+});
 
-    // 버튼 이벤트 등록
-    btnAdd.addEventListener('click', () => account.prependRow());
+btnCancel.addEventListener("click", () => {
+  account.cancelRowCheckedElement("checked");
+  setStatus("선택 행 변경을 취소했습니다.");
+});
 
-    // 편집 버튼
-    btnEdit.addEventListener('click', () => account.modifyRowCheckedElement('check'));
+btnApply.addEventListener("click", () => {
+  applyChanges();
+});
 
-    // 저장버튼 클릭 이벤트
-    btnSave.addEventListener('click', applyAccount);
-}
-
-// 계좌목록 적용(추가, 수정, 삭제)
-function applyAccount(event){
-
-    let applyList = account.getApplyData();
-
-    let isValidation = true;
-    let element = null;
-    let message = null;
-
-    for(let item of applyList){
-        
-        // 계좌번호 체크
-        if(isEmpty(item.acctNum) === true){
-            isValidation = false;
-            element = account.getSeqCellElement(item._rowSeq, 'acctNum');
-            message = '계좌번호를 입력해 주세요.';
-        }
-
-        // 계좌명 체크
-        if(isEmpty(item.acctNm) === true){
-            isValidation = false;
-            element = account.getSeqCellElement(item._rowSeq, 'acctNm');
-            message = '계좌명을 입력해 주세요.';
-        }
-
-        // 은행코드 체크
-        if(isEmpty(item.bankCd) === true){
-            isValidation = false;
-            element = account.getSeqCellElement(item._rowSeq, 'bankCd');
-            message = '은행코드를 선택해 주세요.';
-        }
-    }
-
-    if(isValidation === true){
-        if(confirm('적용하시겠습니까?') == false) return false;
-
-        // 저장
-        sender.request({url: '/account/applyAccount', body: {applyList}})
-        .then(response => {
-            if(response.resultCode == 'SUCCESS'){
-                alert('적용되었습니다.');                
-                account.search().then(data => account.setData(data.list, data.params));
-            }else{
-                alert(response.message);
-            }
-        })
-        .catch(error => alert(error));
-
-    }else{
-        // 얼럿표시 및 포커스 이동
-        alert(message);
-        element.focus();
-        return isValidation;
-    }
-}
-
-/**
- * 계좌상세팝업 클린
- */
-function cleanAcctModal(){
-    console.log('function cleanModal');
-
-
-}
-
-/**
- * 계좌상세팝업 데이터 세팅
- */
-function setAcctModal(data){
-    console.log('function setAcctModal ::', data);
-
-
-}
+window.addEventListener("DOMContentLoaded", async () => {
+  try {
+    await reloadList();
+    setStatus("조회 완료");
+  } catch (error) {
+    setStatus(error.message || "조회 실패", true);
+  }
+});

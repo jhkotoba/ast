@@ -8,15 +8,21 @@ datasource db {
 }
 
 model Account {
-  id         String   @id @default(cuid())
-  user_id    String   @db.VarChar(191)
-  name       String   @db.VarChar(100)
-  balance    Decimal  @db.Decimal(20, 5)
-  currency   String   @default("KRW") @db.VarChar(10)
-  memo       String?  @db.VarChar(1000)
-  sort_order Int      @default(0)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id                 BigInt    @id @default(autoincrement()) @map("ACCOUNT_ID") @db.BigInt
+  user_id            BigInt    @map("USER_ID") @db.BigInt
+  name               String    @map("ACCOUNT_NAME") @db.VarChar(100)
+  account_type       String    @default("ETC") @map("ACCOUNT_TYPE") @db.VarChar(30)
+  account_no_masked  String?   @map("ACCOUNT_NO_MASKED") @db.VarChar(50)
+  currency           String    @default("KRW") @map("CURRENCY_CODE") @db.VarChar(10)
+  balance            Decimal?  @map("CURRENT_BALANCE") @db.Decimal(20, 5)
+  balance_updated_at DateTime? @map("BALANCE_UPDATED_AT") @db.DateTime(3)
+  memo               String?   @map("INSTITUTION_NAME") @db.VarChar(100)
+  sort_order         Int       @default(0) @map("DISPLAY_ORDER")
+  is_active          Boolean   @default(true) @map("IS_ACTIVE")
+  created_at         DateTime  @default(now()) @map("CREATED_AT") @db.DateTime(3)
+  updated_at         DateTime  @updatedAt @map("UPDATED_AT") @db.DateTime(3)
 
-  @@index([user_id, sort_order, id])
+  @@index([user_id, is_active], map: "IX_ACCOUNT_USER_ACTIVE")
+  @@index([user_id, sort_order, id], map: "IX_ACCOUNT_USER_ORDER")
+  @@map("ACCOUNT")
 }

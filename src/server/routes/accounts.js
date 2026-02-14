@@ -1,4 +1,4 @@
-﻿const { Router } = require("express");
+const { Router } = require("express");
 const { NotFoundError, ValidationError } = require("../errors/httpErrors");
 
 function hasOwn(body, key) {
@@ -6,83 +6,154 @@ function hasOwn(body, key) {
 }
 
 function normalizeString(value) {
-  if (typeof value !== "string") {
+  if (value === undefined || value === null) {
     return "";
   }
-  return value.trim();
+  return String(value).trim();
 }
 
-function parseBalance(value) {
-  if (value === undefined || value === null || value === "") {
+function normalizeOptionalString(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  if (value === null || value === "") {
     return null;
+  }
+  return String(value);
+}
+
+function parseBalance(value, required) {
+  if (value === undefined || value === null || value === "") {
+    return required ? { ok: false } : { ok: true, value: null };
   }
 
   if (typeof value === "number") {
     if (!Number.isFinite(value)) {
-      return null;
+      return { ok: false };
     }
-    return String(value);
+    return { ok: true, value: String(value) };
   }
 
   const normalized = String(value).trim();
   const numericPattern = /^[+-]?(?:\d+\.?\d*|\d*\.\d+)(?:[eE][+-]?\d+)?$/;
 
   if (!numericPattern.test(normalized)) {
-    return null;
+    return { ok: false };
   }
 
-  return normalized;
+  return { ok: true, value: normalized };
 }
 
-function parseSortOrder(value) {
+function parseIntField(value, required, fallback) {
   if (value === undefined || value === null || value === "") {
-    return null;
+    if (required) {
+      return { ok: false };
+    }
+    return { ok: true, value: fallback };
   }
+
   const parsed = Number.parseInt(value, 10);
   if (!Number.isFinite(parsed)) {
-    return null;
+    return { ok: false };
   }
-  return parsed;
+
+  return { ok: true, value: parsed };
+}
+
+function parseBooleanField(value, required, fallback) {
+  if (value === undefined) {
+    if (required) {
+      return { ok: false };
+    }
+    return { ok: true, value: fallback };
+  }
+
+  if (typeof value === "boolean") {
+    return { ok: true, value };
+  }
+
+  const normalized = String(value).trim().toLowerCase();
+  if (["1", "true", "y", "yes"].includes(normalized)) {
+    return { ok: true, value: true };
+  }
+  if (["0", "false", "n", "no"].includes(normalized)) {
+    return { ok: true, value: false };
+  }
+
+  return { ok: false };
+}
+
+function parseDateTimeField(value) {
+  if (value === undefined) {
+    return { provided: false, ok: true };
+  }
+
+  if (value === null || value === "") {
+    return { provided: true, ok: true, value: null };
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return { provided: true, ok: false };
+  }
+
+  return { provided: true, ok: true, value: parsed };
 }
 
 function validateCreatePayload(body = {}) {
   const fields = [];
   const data = {};
 
-  const name = normalizeString(body.name);
-  if (!name) {
-    fields.push({ path: "name", reason: "must not be blank" });
+  const accountName = normalizeString(body.account_name);
+  if (!accountName) {
+    fields.push({ path: "account_name", reason: "must not be blank" });
   } else {
-    data.name = name;
+    data.account_name = accountName;
   }
 
-  const balance = parseBalance(body.balance);
-  if (balance === null) {
-    fields.push({ path: "balance", reason: "must be a numeric string" });
+  const accountType = normalizeString(body.account_type || "ETC");
+  if (!accountType) {
+    fields.push({ path: "account_type", reason: "must not be blank" });
   } else {
-    data.balance = balance;
+    data.account_type = accountType;
   }
 
-  const currency = normalizeString(body.currency || "KRW");
-  if (!currency) {
-    fields.push({ path: "currency", reason: "must not be blank" });
+  data.institution_name = normalizeOptionalString(body.institution_name);
+  data.account_no_masked = normalizeOptionalString(body.account_no_masked);
+
+  const currencyCode = normalizeString(body.currency_code || "KRW");
+  if (!currencyCode) {
+    fields.push({ path: "currency_code", reason: "must not be blank" });
   } else {
-    data.currency = currency;
+    data.currency_code = currencyCode;
   }
 
-  if (hasOwn(body, "memo")) {
-    data.memo = body.memo === null ? null : String(body.memo);
+  const currentBalance = parseBalance(body.current_balance, true);
+  if (!currentBalance.ok) {
+    fields.push({ path: "current_balance", reason: "must be a numeric string" });
+  } else {
+    data.current_balance = currentBalance.value;
   }
 
-  if (hasOwn(body, "sort_order")) {
-    const sortOrder = parseSortOrder(body.sort_order);
-    if (sortOrder === null) {
-      fields.push({ path: "sort_order", reason: "must be an integer" });
-    } else {
-      data.sort_order = sortOrder;
-    }
+  const balanceUpdatedAt = parseDateTimeField(body.balance_updated_at);
+  if (!balanceUpdatedAt.ok) {
+    fields.push({ path: "balance_updated_at", reason: "must be a valid datetime" });
+  } else if (balanceUpdatedAt.provided) {
+    data.balance_updated_at = balanceUpdatedAt.value;
+  }
+
+  const displayOrder = parseIntField(body.display_order, false, 0);
+  if (!displayOrder.ok) {
+    fields.push({ path: "display_order", reason: "must be an integer" });
   } else {
-    data.sort_order = 0;
+    data.display_order = displayOrder.value;
+  }
+
+  const isActive = parseBooleanField(body.is_active, false, true);
+  if (!isActive.ok) {
+    fields.push({ path: "is_active", reason: "must be boolean" });
+  } else {
+    data.is_active = isActive.value;
   }
 
   if (fields.length > 0) {
@@ -96,43 +167,74 @@ function validateUpdatePayload(body = {}) {
   const fields = [];
   const data = {};
 
-  if (hasOwn(body, "name")) {
-    const name = normalizeString(body.name);
-    if (!name) {
-      fields.push({ path: "name", reason: "must not be blank" });
+  if (hasOwn(body, "account_name")) {
+    const accountName = normalizeString(body.account_name);
+    if (!accountName) {
+      fields.push({ path: "account_name", reason: "must not be blank" });
     } else {
-      data.name = name;
+      data.account_name = accountName;
     }
   }
 
-  if (hasOwn(body, "balance")) {
-    const balance = parseBalance(body.balance);
-    if (balance === null) {
-      fields.push({ path: "balance", reason: "must be a numeric string" });
+  if (hasOwn(body, "account_type")) {
+    const accountType = normalizeString(body.account_type);
+    if (!accountType) {
+      fields.push({ path: "account_type", reason: "must not be blank" });
     } else {
-      data.balance = balance;
+      data.account_type = accountType;
     }
   }
 
-  if (hasOwn(body, "currency")) {
-    const currency = normalizeString(body.currency);
-    if (!currency) {
-      fields.push({ path: "currency", reason: "must not be blank" });
+  if (hasOwn(body, "institution_name")) {
+    data.institution_name = normalizeOptionalString(body.institution_name);
+  }
+
+  if (hasOwn(body, "account_no_masked")) {
+    data.account_no_masked = normalizeOptionalString(body.account_no_masked);
+  }
+
+  if (hasOwn(body, "currency_code")) {
+    const currencyCode = normalizeString(body.currency_code);
+    if (!currencyCode) {
+      fields.push({ path: "currency_code", reason: "must not be blank" });
     } else {
-      data.currency = currency;
+      data.currency_code = currencyCode;
     }
   }
 
-  if (hasOwn(body, "memo")) {
-    data.memo = body.memo === null ? null : String(body.memo);
+  if (hasOwn(body, "current_balance")) {
+    const currentBalance = parseBalance(body.current_balance, true);
+    if (!currentBalance.ok) {
+      fields.push({ path: "current_balance", reason: "must be a numeric string" });
+    } else {
+      data.current_balance = currentBalance.value;
+    }
   }
 
-  if (hasOwn(body, "sort_order")) {
-    const sortOrder = parseSortOrder(body.sort_order);
-    if (sortOrder === null) {
-      fields.push({ path: "sort_order", reason: "must be an integer" });
+  if (hasOwn(body, "balance_updated_at")) {
+    const balanceUpdatedAt = parseDateTimeField(body.balance_updated_at);
+    if (!balanceUpdatedAt.ok) {
+      fields.push({ path: "balance_updated_at", reason: "must be a valid datetime" });
     } else {
-      data.sort_order = sortOrder;
+      data.balance_updated_at = balanceUpdatedAt.value;
+    }
+  }
+
+  if (hasOwn(body, "display_order")) {
+    const displayOrder = parseIntField(body.display_order, true, 0);
+    if (!displayOrder.ok) {
+      fields.push({ path: "display_order", reason: "must be an integer" });
+    } else {
+      data.display_order = displayOrder.value;
+    }
+  }
+
+  if (hasOwn(body, "is_active")) {
+    const isActive = parseBooleanField(body.is_active, true, true);
+    if (!isActive.ok) {
+      fields.push({ path: "is_active", reason: "must be boolean" });
+    } else {
+      data.is_active = isActive.value;
     }
   }
 
@@ -147,17 +249,28 @@ function validateUpdatePayload(body = {}) {
   return data;
 }
 
+function toIso(value) {
+  if (!value) {
+    return null;
+  }
+  return value instanceof Date ? value.toISOString() : value;
+}
+
 function serializeAccount(row) {
   return {
-    id: row.id,
-    user_id: row.user_id,
-    name: row.name,
-    balance: String(row.balance),
-    currency: row.currency,
-    memo: row.memo,
-    sort_order: row.sort_order,
-    created_at: row.created_at instanceof Date ? row.created_at.toISOString() : row.created_at,
-    updated_at: row.updated_at instanceof Date ? row.updated_at.toISOString() : row.updated_at,
+    account_id: String(row.id),
+    user_id: String(row.user_id),
+    account_name: row.name,
+    account_type: row.account_type,
+    institution_name: row.memo,
+    account_no_masked: row.account_no_masked,
+    currency_code: row.currency,
+    current_balance: row.balance === null || row.balance === undefined ? null : String(row.balance),
+    balance_updated_at: toIso(row.balance_updated_at),
+    display_order: row.sort_order,
+    is_active: Boolean(row.is_active),
+    created_at: toIso(row.created_at),
+    updated_at: toIso(row.updated_at),
   };
 }
 
@@ -182,7 +295,7 @@ function createAccountsRouter({ accountStore }) {
       res.status(200).json({
         data: {
           list: result.list.map(serializeAccount),
-          page: result.page,
+          page_no: result.page_no,
           page_size: result.page_size,
           total_count: result.total_count,
         },

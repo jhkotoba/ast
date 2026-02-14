@@ -1,4 +1,4 @@
-﻿const test = require("node:test");
+const test = require("node:test");
 const assert = require("node:assert/strict");
 const request = require("supertest");
 
@@ -14,12 +14,12 @@ function createFakeAccountStore() {
 
   return {
     async list(req, query) {
-      const page = Number.parseInt(query && query.page, 10) || 1;
+      const pageNo = Number.parseInt(query && query.page_no, 10) || 1;
       const pageSize = Number.parseInt(query && query.page_size, 10) || 20;
-      const list = rows.filter((row) => row.user_id === req.auth.userId);
+      const list = rows.filter((row) => row.user_id === req.auth.userId && row.is_active === true);
       return {
         list,
-        page,
+        page_no: pageNo,
         page_size: pageSize,
         total_count: list.length,
       };
@@ -28,13 +28,17 @@ function createFakeAccountStore() {
     async create(req, payload) {
       seq += 1;
       const row = {
-        id: String(seq),
-        user_id: req.auth.userId,
-        name: payload.name,
-        balance: payload.balance,
-        currency: payload.currency,
-        memo: payload.memo || null,
-        sort_order: payload.sort_order || 0,
+        id: BigInt(seq),
+        user_id: BigInt(req.auth.userId),
+        name: payload.account_name,
+        account_type: payload.account_type,
+        memo: payload.institution_name,
+        account_no_masked: payload.account_no_masked,
+        currency: payload.currency_code,
+        balance: payload.current_balance,
+        balance_updated_at: payload.balance_updated_at || nowIso(),
+        sort_order: payload.display_order || 0,
+        is_active: payload.is_active !== false,
         created_at: nowIso(),
         updated_at: nowIso(),
       };
@@ -43,25 +47,43 @@ function createFakeAccountStore() {
     },
 
     async findById(req, id) {
-      return rows.find((row) => row.id === id && row.user_id === req.auth.userId) || null;
+      return (
+        rows.find(
+          (row) => String(row.id) === String(id) && String(row.user_id) === String(req.auth.userId) && row.is_active,
+        ) || null
+      );
     },
 
     async updateById(req, id, payload) {
-      const row = rows.find((item) => item.id === id && item.user_id === req.auth.userId);
+      const row = rows.find(
+        (item) => String(item.id) === String(id) && String(item.user_id) === String(req.auth.userId) && item.is_active,
+      );
       if (!row) {
         return null;
       }
 
-      Object.assign(row, payload, { updated_at: nowIso() });
+      if (Object.prototype.hasOwnProperty.call(payload, "account_name")) row.name = payload.account_name;
+      if (Object.prototype.hasOwnProperty.call(payload, "account_type")) row.account_type = payload.account_type;
+      if (Object.prototype.hasOwnProperty.call(payload, "institution_name")) row.memo = payload.institution_name;
+      if (Object.prototype.hasOwnProperty.call(payload, "account_no_masked")) row.account_no_masked = payload.account_no_masked;
+      if (Object.prototype.hasOwnProperty.call(payload, "currency_code")) row.currency = payload.currency_code;
+      if (Object.prototype.hasOwnProperty.call(payload, "current_balance")) row.balance = payload.current_balance;
+      if (Object.prototype.hasOwnProperty.call(payload, "balance_updated_at")) row.balance_updated_at = payload.balance_updated_at;
+      if (Object.prototype.hasOwnProperty.call(payload, "display_order")) row.sort_order = payload.display_order;
+      if (Object.prototype.hasOwnProperty.call(payload, "is_active")) row.is_active = payload.is_active;
+      row.updated_at = nowIso();
       return row;
     },
 
     async deleteById(req, id) {
-      const index = rows.findIndex((row) => row.id === id && row.user_id === req.auth.userId);
-      if (index < 0) {
+      const row = rows.find(
+        (item) => String(item.id) === String(id) && String(item.user_id) === String(req.auth.userId) && item.is_active,
+      );
+      if (!row) {
         return false;
       }
-      rows.splice(index, 1);
+      row.is_active = false;
+      row.updated_at = nowIso();
       return true;
     },
   };
@@ -79,7 +101,7 @@ test("with X-Auth-User-Id passes boundary", async () => {
   const app = createApp({ accountStore: createFakeAccountStore() });
   const res = await request(app)
     .get("/api/accounts")
-    .set("X-Auth-User-Id", "u1")
+    .set("X-Auth-User-Id", "1")
     .set("X-Auth-Provider", "oe");
 
   assert.equal(res.status, 200);
@@ -88,7 +110,7 @@ test("with X-Auth-User-Id passes boundary", async () => {
 
 test("missing X-Auth-Provider returns 401", async () => {
   const app = createApp({ accountStore: createFakeAccountStore() });
-  const res = await request(app).get("/api/accounts").set("X-Auth-User-Id", "u1");
+  const res = await request(app).get("/api/accounts").set("X-Auth-User-Id", "1");
 
   assert.equal(res.status, 401);
   assert.equal(res.body.error.code, "UNAUTHORIZED");
@@ -98,17 +120,18 @@ test("create ignores user_id in body", async () => {
   const app = createApp({ accountStore: createFakeAccountStore() });
   const res = await request(app)
     .post("/api/accounts")
-    .set("X-Auth-User-Id", "owner-1")
+    .set("X-Auth-User-Id", "1")
     .set("X-Auth-Provider", "oe")
     .send({
-      user_id: "attacker",
-      name: "wallet",
-      balance: "100",
-      currency: "KRW",
+      user_id: "9999",
+      account_name: "wallet",
+      account_type: "ETC",
+      current_balance: "100",
+      currency_code: "KRW",
     });
 
   assert.equal(res.status, 201);
-  assert.equal(res.body.data.user_id, "owner-1");
+  assert.equal(res.body.data.user_id, "1");
 });
 
 test("cross-user resource access returns 404", async () => {
@@ -116,19 +139,20 @@ test("cross-user resource access returns 404", async () => {
 
   const created = await request(app)
     .post("/api/accounts")
-    .set("X-Auth-User-Id", "user-a")
+    .set("X-Auth-User-Id", "1")
     .set("X-Auth-Provider", "oe")
     .send({
-      name: "a-account",
-      balance: "50",
-      currency: "KRW",
+      account_name: "a-account",
+      account_type: "ETC",
+      current_balance: "50",
+      currency_code: "KRW",
     });
 
-  const accountId = created.body.data.id;
+  const accountId = created.body.data.account_id;
 
   const foundByOther = await request(app)
     .get(`/api/accounts/${accountId}`)
-    .set("X-Auth-User-Id", "user-b")
+    .set("X-Auth-User-Id", "2")
     .set("X-Auth-Provider", "oe");
 
   assert.equal(foundByOther.status, 404);

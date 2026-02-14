@@ -1,4 +1,9 @@
-﻿const { PrismaClient } = require("@prisma/client");
+const dotenv = require("dotenv");
+const { PrismaClient } = require("@prisma/client");
+
+if (!process.env.DATABASE_URL) {
+  dotenv.config({ path: process.argv[2] === "dev" ? ".env.dev" : ".env" });
+}
 
 const globalForPrisma = globalThis;
 
