@@ -1,9 +1,10 @@
+import { showToast } from "/script/common/toast.js";
+
 const AUTH_HEADERS = {
   "X-Auth-User-Id": "1",
   "X-Auth-Provider": "oe",
 };
 
-const statusEl = document.getElementById("status");
 const mappingResultEl = document.getElementById("mappingResult");
 const templateIdEl = document.getElementById("templateId");
 const tagIdEl = document.getElementById("tagId");
@@ -21,8 +22,7 @@ const btnMapRemove = document.getElementById("btnMapRemove");
 const btnMapReplace = document.getElementById("btnMapReplace");
 
 function setStatus(message, isError = false) {
-  statusEl.textContent = message;
-  statusEl.style.color = isError ? "#b91c1c" : "#334155";
+  showToast(message, { type: isError ? "error" : "success" });
 }
 
 function setMappingResult(value) {
