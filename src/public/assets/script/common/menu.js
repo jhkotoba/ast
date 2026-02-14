@@ -31,12 +31,15 @@ export const createMenu = (menuList, currentPath = "/") => {
 
 // 기본 메뉴
 export const defaultMenuList = [
-  { menuNo: 1, menuNm: "가계부", menuUrl: null, menuLv: 1, menuSeq: 1, groupNo: 0 },
-  { menuNo: 12, menuNm: "계좌관리", menuUrl: "/account/account", menuLv: 2, menuSeq: 2, groupNo: 1 },
-  { menuNo: 13, menuNm: "태그관리", menuUrl: "/tag/tag", menuLv: 2, menuSeq: 3, groupNo: 1 },
-  { menuNo: 14, menuNm: "템플릿관리", menuUrl: "/template/template", menuLv: 2, menuSeq: 4, groupNo: 1 },
-  { menuNo: 15, menuNm: "거래등록/목록", menuUrl: "/transaction/create-list", menuLv: 2, menuSeq: 5, groupNo: 1 },
-  { menuNo: 16, menuNm: "거래수정/삭제", menuUrl: "/transaction/update-delete", menuLv: 2, menuSeq: 6, groupNo: 1 },
+  { menuNo: 1, menuNm: "계좌", menuUrl: null, menuLv: 1, menuSeq: 1, groupNo: 0 },
+  { menuNo: 2, menuNm: "가계부", menuUrl: null, menuLv: 1, menuSeq: 2, groupNo: 0 },
+
+  { menuNo: 11, menuNm: "계좌관리", menuUrl: "/account/account", menuLv: 2, menuSeq: 1, groupNo: 1 },
+
+  { menuNo: 21, menuNm: "거래등록/목록", menuUrl: "/transaction/create-list", menuLv: 2, menuSeq: 2, groupNo: 2 },
+  { menuNo: 22, menuNm: "거래수정/삭제", menuUrl: "/transaction/update-delete", menuLv: 2, menuSeq: 3, groupNo: 2 },
+  { menuNo: 23, menuNm: "태그관리", menuUrl: "/tag/tag", menuLv: 2, menuSeq: 4, groupNo: 2 },
+  { menuNo: 24, menuNm: "템플릿관리", menuUrl: "/template/template", menuLv: 2, menuSeq: 5, groupNo: 2 },
 ];
 
 export const createDefaultMenu = () => createMenu(defaultMenuList);

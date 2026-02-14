@@ -88,7 +88,7 @@ aside {
   font-size: 13px;
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 6px;
   width: 180px;
   min-width: 180px;
   height: 100%;
@@ -121,7 +121,7 @@ aside .menu-item {
   user-select: none;
   font-size: 14px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 5px;
   padding: 8px 10px;
   cursor: pointer;
 }
@@ -140,7 +140,7 @@ aside .menu-item.active {
 .main {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 6px;
   flex: 1;
   min-width: 0;
   height: 100%;
@@ -187,7 +187,7 @@ main {
 
 .grid-host {
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
+  border-radius: 4px;
   min-height: 560px;
   padding: 8px;
   background: #fff;
@@ -223,7 +223,7 @@ main {
 .pre-box {
   margin: 0;
   border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border-radius: 4px;
   background: #f8fafc;
   padding: 10px;
   max-height: 220px;
@@ -417,7 +417,7 @@ button,
 .content button {
   background: #ffffff;
   border: 1px solid var(--line-strong);
-  border-radius: 6px;
+  border-radius: 4px;
   color: var(--text);
   display: inline-block;
   overflow: visible;
