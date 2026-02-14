@@ -3,7 +3,10 @@
 function errorHandler(err, req, res, next) {
   const status = err instanceof HttpError ? err.status : 500;
   const code = err instanceof HttpError ? err.code : "INTERNAL_ERROR";
-  const message = err && err.message ? err.message : "Internal Server Error";
+  const message =
+    err instanceof HttpError
+      ? err.message
+      : "Internal Server Error";
 
   const payload = {
     error: {
