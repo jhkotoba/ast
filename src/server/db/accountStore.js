@@ -11,8 +11,7 @@ const SORT_FIELD_MAP = {
   institution_name: "memo",
   account_no_masked: "account_no_masked",
   currency_code: "currency",
-  current_balance: "balance",
-  balance_updated_at: "balance_updated_at",
+  current_balance: "balance",  
   display_order: "sort_order",
   is_active: "is_active",
   created_at: "created_at",
@@ -106,8 +105,6 @@ function createPrismaAccountStore(prismaClient) {
     },
 
     async create(req, payload) {
-      const hasBalance = Object.prototype.hasOwnProperty.call(payload, "current_balance");
-
       return prismaClient.account.create({
         data: {
           user_id: currentUserId(req),
@@ -119,12 +116,6 @@ function createPrismaAccountStore(prismaClient) {
           balance: payload.current_balance,
           sort_order: payload.display_order,
           is_active: payload.is_active,
-          balance_updated_at:
-            payload.balance_updated_at !== undefined
-              ? payload.balance_updated_at
-              : hasBalance
-                ? new Date()
-                : null,
         },
       });
     },
@@ -155,12 +146,6 @@ function createPrismaAccountStore(prismaClient) {
       }
       if (Object.prototype.hasOwnProperty.call(payload, "current_balance")) {
         data.balance = payload.current_balance;
-        if (!Object.prototype.hasOwnProperty.call(payload, "balance_updated_at")) {
-          data.balance_updated_at = new Date();
-        }
-      }
-      if (Object.prototype.hasOwnProperty.call(payload, "balance_updated_at")) {
-        data.balance_updated_at = payload.balance_updated_at;
       }
       if (Object.prototype.hasOwnProperty.call(payload, "display_order")) {
         data.sort_order = payload.display_order;

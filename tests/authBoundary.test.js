@@ -36,7 +36,6 @@ function createFakeAccountStore() {
         account_no_masked: payload.account_no_masked,
         currency: payload.currency_code,
         balance: payload.current_balance,
-        balance_updated_at: payload.balance_updated_at || nowIso(),
         sort_order: payload.display_order || 0,
         is_active: payload.is_active !== false,
         created_at: nowIso(),
@@ -68,7 +67,6 @@ function createFakeAccountStore() {
       if (Object.prototype.hasOwnProperty.call(payload, "account_no_masked")) row.account_no_masked = payload.account_no_masked;
       if (Object.prototype.hasOwnProperty.call(payload, "currency_code")) row.currency = payload.currency_code;
       if (Object.prototype.hasOwnProperty.call(payload, "current_balance")) row.balance = payload.current_balance;
-      if (Object.prototype.hasOwnProperty.call(payload, "balance_updated_at")) row.balance_updated_at = payload.balance_updated_at;
       if (Object.prototype.hasOwnProperty.call(payload, "display_order")) row.sort_order = payload.display_order;
       if (Object.prototype.hasOwnProperty.call(payload, "is_active")) row.is_active = payload.is_active;
       row.updated_at = nowIso();
@@ -132,6 +130,40 @@ test("create ignores user_id in body", async () => {
 
   assert.equal(res.status, 201);
   assert.equal(res.body.data.user_id, "1");
+});
+
+test("invalid account_type returns 400", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app)
+    .post("/api/accounts")
+    .set("X-Auth-User-Id", "1")
+    .set("X-Auth-Provider", "oe")
+    .send({
+      account_name: "wallet",
+      account_type: "INVALID",
+      current_balance: "100",
+      currency_code: "KRW",
+    });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error.code, "VALIDATION_ERROR");
+});
+
+test("invalid currency_code returns 400", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app)
+    .post("/api/accounts")
+    .set("X-Auth-User-Id", "1")
+    .set("X-Auth-Provider", "oe")
+    .send({
+      account_name: "wallet",
+      account_type: "ETC",
+      current_balance: "100",
+      currency_code: "INVALID",
+    });
+
+  assert.equal(res.status, 400);
+  assert.equal(res.body.error.code, "VALIDATION_ERROR");
 });
 
 test("cross-user resource access returns 404", async () => {

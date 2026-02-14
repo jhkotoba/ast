@@ -1,4 +1,12 @@
 import { showToast } from "/script/common/toast.js";
+import {
+  ACCOUNT_TYPE_OPTIONS,
+  ACCOUNT_TYPE_TEXT_MAP,
+  ACCOUNT_TYPE_VALUE_SET,
+  CURRENCY_CODE_OPTIONS,
+  CURRENCY_CODE_TEXT_MAP,
+  CURRENCY_CODE_VALUE_SET,
+} from "/script/common/codebook.js";
 
 const AUTH_HEADERS = {
   "X-Auth-User-Id": "1",
@@ -55,15 +63,56 @@ function toNullableText(value) {
   return String(value);
 }
 
+function normalizeAccountType(value) {
+  const normalized = String(value || "ETC").trim().toUpperCase() || "ETC";
+  return ACCOUNT_TYPE_VALUE_SET.has(normalized) ? normalized : "ETC";
+}
+
+function normalizeCurrencyCode(value) {
+  const normalized = String(value || "KRW").trim().toUpperCase() || "KRW";
+  return CURRENCY_CODE_VALUE_SET.has(normalized) ? normalized : "KRW";
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+  const pad = (num) => String(num).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(
+    date.getMinutes(),
+  )}:${pad(date.getSeconds())}`;
+}
+
+function formatBalance(value) {
+  if (value === undefined || value === null || value === "") {
+    return value;
+  }
+  const normalized = String(value).replace(/,/g, "").trim();
+  if (normalized === "") {
+    return null;
+  }
+  const numberValue = Number(normalized);
+  if (!Number.isFinite(numberValue)) {
+    return String(value);
+  }
+  return numberValue.toLocaleString("en-US");
+}
+
 function normalizeWritePayload(row, { requireAccountName, requireBalance }) {
   const accountName = String(row.account_name || "").trim();
   if (requireAccountName && accountName.length === 0) {
-    throw new Error("계좌 별칭은 필수입니다.");
+    throw new Error("계좌명은 필수입니다.");
   }
 
   const rawBalance = row.current_balance;
   const currentBalance =
-    rawBalance === undefined || rawBalance === null || rawBalance === "" ? null : String(rawBalance).trim();
+    rawBalance === undefined || rawBalance === null || rawBalance === ""
+      ? null
+      : String(rawBalance).replace(/,/g, "").trim();
 
   if (requireBalance && !currentBalance) {
     throw new Error("현재 잔액은 필수입니다.");
@@ -85,18 +134,14 @@ function normalizeWritePayload(row, { requireAccountName, requireBalance }) {
 
   const payload = {
     account_name: accountName,
-    account_type: String(row.account_type || "ETC").trim() || "ETC",
+    account_type: normalizeAccountType(row.account_type),
     institution_name: toNullableText(row.institution_name),
     account_no_masked: toNullableText(row.account_no_masked),
-    currency_code: String(row.currency_code || "KRW").trim() || "KRW",
+    currency_code: normalizeCurrencyCode(row.currency_code),
     current_balance: currentBalance,
     display_order: displayOrder,
     is_active: toBoolean(row.is_active, true),
   };
-
-  if (row.balance_updated_at !== undefined && row.balance_updated_at !== null && row.balance_updated_at !== "") {
-    payload.balance_updated_at = row.balance_updated_at;
-  }
 
   return payload;
 }
@@ -104,13 +149,32 @@ function normalizeWritePayload(row, { requireAccountName, requireBalance }) {
 const account = new window.wgrid("account", {
   fields: [
     { title: null, element: "checkbox", name: "checked", edit: "checkbox", width: "3%", align: "center" },
-    { title: "계좌 별칭", element: "text", name: "account_name", edit: "text", width: "14%" },
-    { title: "유형", element: "text", name: "account_type", edit: "text", width: "10%" },
+    { title: "계좌명", element: "text", name: "account_name", edit: "text", width: "14%" },
+    {
+      title: "유형",
+      element: "text",
+      name: "account_type",
+      edit: "select",
+      width: "12%",
+      data: {
+        mapping: ACCOUNT_TYPE_TEXT_MAP,
+        select: { list: ACCOUNT_TYPE_OPTIONS },
+      },
+    },
     { title: "기관명", element: "text", name: "institution_name", edit: "text", width: "12%" },
     { title: "마스킹 번호", element: "text", name: "account_no_masked", edit: "text", width: "10%" },
-    { title: "통화코드", element: "text", name: "currency_code", edit: "text", width: "8%" },
+    {
+      title: "통화코드",
+      element: "text",
+      name: "currency_code",
+      edit: "select",
+      width: "12%",
+      data: {
+        mapping: CURRENCY_CODE_TEXT_MAP,
+        select: { list: CURRENCY_CODE_OPTIONS },
+      },
+    },
     { title: "현재 잔액", element: "text", name: "current_balance", edit: "text", width: "10%" },
-    { title: "잔액 업데이트 시각", element: "text", name: "balance_updated_at", edit: "text", width: "12%" },
     { title: "정렬 순서", element: "text", name: "display_order", edit: "text", width: "8%" },
     {
       title: "사용여부",
@@ -119,11 +183,11 @@ const account = new window.wgrid("account", {
       edit: "select",
       width: "8%",
       data: {
-        mapping: { true: "true", false: "false" },
+        mapping: { true: "사용", false: "미사용" },
         select: {
           list: [
-            { value: "true", text: "true" },
-            { value: "false", text: "false" },
+            { value: "true", text: "사용" },
+            { value: "false", text: "미사용" },
           ],
         },
       },
@@ -161,7 +225,12 @@ const account = new window.wgrid("account", {
     const list = (response.data.list || []).map((item) => ({
       ...item,
       checked: false,
+      account_type: normalizeAccountType(item.account_type),
+      currency_code: normalizeCurrencyCode(item.currency_code),
+      current_balance: formatBalance(item.current_balance),
       is_active: String(item.is_active),
+      created_at: formatDateTime(item.created_at),
+      updated_at: formatDateTime(item.updated_at),
     }));
 
     return {

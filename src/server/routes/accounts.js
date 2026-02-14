@@ -1,6 +1,9 @@
 const { Router } = require("express");
 const { NotFoundError, ValidationError } = require("../errors/httpErrors");
 
+const ACCOUNT_TYPE_VALUES = new Set(["CASH", "BANK", "CARD", "INVEST", "ETC"]);
+const CURRENCY_CODE_VALUES = new Set(["KRW", "USD", "JPY", "EUR", "CNY", "HKD", "SGD"]);
+
 function hasOwn(body, key) {
   return Object.prototype.hasOwnProperty.call(body, key);
 }
@@ -20,6 +23,16 @@ function normalizeOptionalString(value) {
     return null;
   }
   return String(value);
+}
+
+function normalizeAccountType(value) {
+  const normalized = String(value || "ETC").trim().toUpperCase() || "ETC";
+  return ACCOUNT_TYPE_VALUES.has(normalized) ? normalized : null;
+}
+
+function normalizeCurrencyCode(value) {
+  const normalized = String(value || "KRW").trim().toUpperCase() || "KRW";
+  return CURRENCY_CODE_VALUES.has(normalized) ? normalized : null;
 }
 
 function parseBalance(value, required) {
@@ -83,23 +96,6 @@ function parseBooleanField(value, required, fallback) {
   return { ok: false };
 }
 
-function parseDateTimeField(value) {
-  if (value === undefined) {
-    return { provided: false, ok: true };
-  }
-
-  if (value === null || value === "") {
-    return { provided: true, ok: true, value: null };
-  }
-
-  const parsed = new Date(value);
-  if (Number.isNaN(parsed.getTime())) {
-    return { provided: true, ok: false };
-  }
-
-  return { provided: true, ok: true, value: parsed };
-}
-
 function validateCreatePayload(body = {}) {
   const fields = [];
   const data = {};
@@ -111,9 +107,9 @@ function validateCreatePayload(body = {}) {
     data.account_name = accountName;
   }
 
-  const accountType = normalizeString(body.account_type || "ETC");
+  const accountType = normalizeAccountType(body.account_type);
   if (!accountType) {
-    fields.push({ path: "account_type", reason: "must not be blank" });
+    fields.push({ path: "account_type", reason: "must be one of CASH, BANK, CARD, INVEST, ETC" });
   } else {
     data.account_type = accountType;
   }
@@ -121,9 +117,9 @@ function validateCreatePayload(body = {}) {
   data.institution_name = normalizeOptionalString(body.institution_name);
   data.account_no_masked = normalizeOptionalString(body.account_no_masked);
 
-  const currencyCode = normalizeString(body.currency_code || "KRW");
+  const currencyCode = normalizeCurrencyCode(body.currency_code);
   if (!currencyCode) {
-    fields.push({ path: "currency_code", reason: "must not be blank" });
+    fields.push({ path: "currency_code", reason: "must be one of KRW, USD, JPY, EUR, CNY, HKD, SGD" });
   } else {
     data.currency_code = currencyCode;
   }
@@ -133,13 +129,6 @@ function validateCreatePayload(body = {}) {
     fields.push({ path: "current_balance", reason: "must be a numeric string" });
   } else {
     data.current_balance = currentBalance.value;
-  }
-
-  const balanceUpdatedAt = parseDateTimeField(body.balance_updated_at);
-  if (!balanceUpdatedAt.ok) {
-    fields.push({ path: "balance_updated_at", reason: "must be a valid datetime" });
-  } else if (balanceUpdatedAt.provided) {
-    data.balance_updated_at = balanceUpdatedAt.value;
   }
 
   const displayOrder = parseIntField(body.display_order, false, 0);
@@ -177,9 +166,9 @@ function validateUpdatePayload(body = {}) {
   }
 
   if (hasOwn(body, "account_type")) {
-    const accountType = normalizeString(body.account_type);
+    const accountType = normalizeAccountType(body.account_type);
     if (!accountType) {
-      fields.push({ path: "account_type", reason: "must not be blank" });
+      fields.push({ path: "account_type", reason: "must be one of CASH, BANK, CARD, INVEST, ETC" });
     } else {
       data.account_type = accountType;
     }
@@ -194,9 +183,9 @@ function validateUpdatePayload(body = {}) {
   }
 
   if (hasOwn(body, "currency_code")) {
-    const currencyCode = normalizeString(body.currency_code);
+    const currencyCode = normalizeCurrencyCode(body.currency_code);
     if (!currencyCode) {
-      fields.push({ path: "currency_code", reason: "must not be blank" });
+      fields.push({ path: "currency_code", reason: "must be one of KRW, USD, JPY, EUR, CNY, HKD, SGD" });
     } else {
       data.currency_code = currencyCode;
     }
@@ -208,15 +197,6 @@ function validateUpdatePayload(body = {}) {
       fields.push({ path: "current_balance", reason: "must be a numeric string" });
     } else {
       data.current_balance = currentBalance.value;
-    }
-  }
-
-  if (hasOwn(body, "balance_updated_at")) {
-    const balanceUpdatedAt = parseDateTimeField(body.balance_updated_at);
-    if (!balanceUpdatedAt.ok) {
-      fields.push({ path: "balance_updated_at", reason: "must be a valid datetime" });
-    } else {
-      data.balance_updated_at = balanceUpdatedAt.value;
     }
   }
 
@@ -266,7 +246,6 @@ function serializeAccount(row) {
     account_no_masked: row.account_no_masked,
     currency_code: row.currency,
     current_balance: row.balance === null || row.balance === undefined ? null : String(row.balance),
-    balance_updated_at: toIso(row.balance_updated_at),
     display_order: row.sort_order,
     is_active: Boolean(row.is_active),
     created_at: toIso(row.created_at),

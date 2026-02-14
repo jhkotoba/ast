@@ -581,6 +581,48 @@ button.primary,
   font-size: 17px;
 }
 
+/* Grid pages: keep viewport fixed and let only grid body scroll. */
+body.page-grid-fit .main {
+  display: flex;
+  flex-direction: column;
+}
+
+body.page-grid-fit main.content {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+body.page-grid-fit .page-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+body.page-grid-fit .grid-host {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: auto;
+}
+
+body.page-grid-fit .grid-host > .header {
+  flex: 0 0 auto;
+}
+
+body.page-grid-fit .grid-host > .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto !important;
+}
+
+body.page-grid-fit .grid-host > .pagination {
+  flex: 0 0 auto;
+}
+
 @media (max-width: 1024px) {
   .workspace {
     flex-direction: column;
