@@ -1,6 +1,0 @@
-input{background: #3c3b3b; color: #C6C6C6; font-size: 1em; height: 30px; border: 1px solid #646464; border-radius: 2px; text-indent: 5px; width: 100%; margin: 1px 1px 1px 1px;}
-body{background: #363636; font-size: 12px; color: #C6C6C6;}
-button{background: #4C4C4C; border: 1px solid #585858; border-radius: 2px; color: #C6C6C6; display: inline-block; overflow: visible; text-align: center; white-space: nowrap; user-select: none; margin: 0; cursor: pointer; font-weight: 600; padding: 0.25rem 0.5rem; height: 30px; vertical-align: middle;}
-.login-form{width: 400px; height: 300px; text-align: center; margin: 0 auto;}
-.login-form a{color: #C6C6C6;}
-.login-form .input-group input{margin-top: 1px; margin-bottom: 4px;}
