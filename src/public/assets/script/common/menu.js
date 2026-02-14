@@ -1,75 +1,42 @@
-/** 메뉴 태그 생성
- */
-export const createMenu = menuList => {
+﻿/** 메뉴 태그 생성 */
+export const createMenu = (menuList, currentPath = "/") => {
+  if (!Array.isArray(menuList) || menuList.length < 1) {
+    return "<ul></ul>";
+  }
 
-	if(menuList.length < 1) return '<ul></ul>';
-	
-	let levelList = [...new Set(menuList.map(menu => menu.menuLv))].sort();
-	let maxlevel = levelList[levelList.length-1];
-	
-	// 메뉴 레벨별 순서별 정렬
-	let resultList = null;
-	for(let i=0; i<maxlevel; i++){
-		if(i === 0){
-			 resultList = menuList.filter(menu => menu.menuLv === (i+1))
-			 	.sort((a, b) => a.menuSeq - b.menuSeq)
-		}else{
-			menuList.filter(menu => menu.menuLv === (i+1))
-				.sort((a, b) => b.menuSeq - a.menuSeq)
-				.forEach(menu => {
-					for(let j=0; j<resultList.length; j++){
-						if(resultList[j].menuNo == menu.groupNo){
-							resultList.splice((j+1), 0, menu);
-						}
-					}
-				});
-		}		
-	}
-	
-	// 메뉴 태그 생성
-	let html = '<ul>';
-	for(let i=0; i<resultList.length; i++){
-		
-		let item = resultList[i];
-		let next = resultList[i+1];
+  const level1 = menuList
+    .filter((menu) => menu.menuLv === 1)
+    .sort((a, b) => a.menuSeq - b.menuSeq);
 
-		if(item.menuLv > 1){
-			html += `<li class="off"><div data-url="${resultList[i].menuUrl}">${resultList[i].menuNm}</div>`;
-		}else{
-			html += `<li><div data-lv="${item.menuLv}">${resultList[i].menuNm}</div>`;
-		}
+  const level2 = menuList
+    .filter((menu) => menu.menuLv === 2)
+    .sort((a, b) => a.menuSeq - b.menuSeq);
 
-		if(item.menuLv != next?.menuLv){
-			if(item.menuLv < next?.menuLv){
-				html += '<ul>';
-			}else{
-				html += '</li></ul>';
-				if(next == undefined){
-					html += '</li>';
-				}else if(item.menuLv > next.menuLv){
-					html += '</li>';
-				}
-			}
-		}else{
-			html += '</li>';
-		}	
-	}
-	html += '</ul>';
-	return html;
-}
+  let html = '<ul class="menu-root">';
+  level1.forEach((group) => {
+    html += `<li class="menu-group"><div class="menu-group-title">${group.menuNm}</div><ul class="menu-list">`;
 
-// act 프로젝트(가계부 축소) 기본 메뉴
+    level2
+      .filter((menu) => menu.groupNo === group.menuNo)
+      .forEach((menu) => {
+        const activeClass = menu.menuUrl === currentPath ? " active" : "";
+        html += `<li><div class="menu-item${activeClass}" data-url="${menu.menuUrl}">${menu.menuNm}</div></li>`;
+      });
+
+    html += "</ul></li>";
+  });
+  html += "</ul>";
+  return html;
+};
+
+// 기본 메뉴
 export const defaultMenuList = [
-	// 1레벨(그룹)
-	{ menuNo: 1, menuNm: '가계부', menuUrl: null, menuLv: 1, menuSeq: 1, groupNo: 0 },
-
-	// 2레벨(페이지)
-	{ menuNo: 11, menuNm: '메인', menuUrl: '/', menuLv: 2, menuSeq: 1, groupNo: 1 },
-	{ menuNo: 12, menuNm: '계좌관리', menuUrl: '/account/account', menuLv: 2, menuSeq: 2, groupNo: 1 },
-	{ menuNo: 13, menuNm: '태그관리', menuUrl: '/tag/tag', menuLv: 2, menuSeq: 3, groupNo: 1 },
-	{ menuNo: 14, menuNm: '템플릿관리', menuUrl: '/template/template', menuLv: 2, menuSeq: 4, groupNo: 1 },
-	{ menuNo: 15, menuNm: '거래등록/목록', menuUrl: '/transaction/create-list', menuLv: 2, menuSeq: 5, groupNo: 1 },
-	{ menuNo: 16, menuNm: '거래수정/삭제', menuUrl: '/transaction/update-delete', menuLv: 2, menuSeq: 6, groupNo: 1 },
+  { menuNo: 1, menuNm: "가계부", menuUrl: null, menuLv: 1, menuSeq: 1, groupNo: 0 },
+  { menuNo: 12, menuNm: "계좌관리", menuUrl: "/account/account", menuLv: 2, menuSeq: 2, groupNo: 1 },
+  { menuNo: 13, menuNm: "태그관리", menuUrl: "/tag/tag", menuLv: 2, menuSeq: 3, groupNo: 1 },
+  { menuNo: 14, menuNm: "템플릿관리", menuUrl: "/template/template", menuLv: 2, menuSeq: 4, groupNo: 1 },
+  { menuNo: 15, menuNm: "거래등록/목록", menuUrl: "/transaction/create-list", menuLv: 2, menuSeq: 5, groupNo: 1 },
+  { menuNo: 16, menuNm: "거래수정/삭제", menuUrl: "/transaction/update-delete", menuLv: 2, menuSeq: 6, groupNo: 1 },
 ];
 
 export const createDefaultMenu = () => createMenu(defaultMenuList);

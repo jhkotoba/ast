@@ -1,82 +1,59 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>템플릿관리</title>
+  <link rel="stylesheet" href="/style/common.css" type="text/css" />
   <link rel="stylesheet" href="/assets/library/wgrid/wgrid_white.min.css" type="text/css" />
-  <style>
-    :root { --bg:#eef2f6; --panel:#fff; --line:#d9e2ec; --text:#1f2937; --sub:#64748b; --brand:#0f172a; --sidebar:#f8fafc; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:"Segoe UI", Arial, sans-serif; background:var(--bg); color:var(--text); }
-    .topbar { height:64px; background:linear-gradient(90deg,#e2e8f0,#f1f5f9); border-bottom:1px solid var(--line); }
-    .layout { display:grid; grid-template-columns:220px 1fr; min-height:calc(100vh - 64px); }
-    .sidebar { background:var(--sidebar); border-right:1px solid var(--line); padding:18px 12px; }
-    .sidebar h2 { margin:0 0 12px; font-size:13px; color:var(--sub); font-weight:600; }
-    .menu { list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
-    .menu a { display:block; padding:10px 12px; border-radius:8px; text-decoration:none; color:#0f172a; font-weight:600; background:#fff; border:1px solid #e2e8f0; }
-    .menu a.active { background:#dbeafe; border-color:#bfdbfe; }
-    .content { padding:18px; display:grid; gap:14px; }
-    .panel { background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:14px; }
-    .page-title { margin:0 0 12px; font-size:20px; font-weight:700; }
-    .toolbar { display:flex; justify-content:flex-end; gap:8px; margin-bottom:10px; flex-wrap:wrap; }
-    button { border:1px solid #cbd5e1; background:#fff; color:#111827; border-radius:8px; padding:8px 12px; cursor:pointer; font-size:13px; font-weight:600; }
-    button.primary { background:var(--brand); color:#fff; border-color:var(--brand); }
-    #template { border:1px solid #e2e8f0; border-radius:10px; min-height:400px; padding:8px; background:#fff; }
-    .status { margin-top:10px; min-height:18px; font-size:13px; color:#334155; }
-    .mapping-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px; }
-    .mapping-row input { border:1px solid #cbd5e1; border-radius:8px; padding:8px 10px; min-width:220px; }
-    pre { margin:0; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; padding:10px; max-height:220px; overflow:auto; font-size:12px; }
-    @media (max-width:1024px) { .layout { grid-template-columns:1fr; } .sidebar { border-right:0; border-bottom:1px solid var(--line);} }
-  </style>
 </head>
 <body>
-  <div class="topbar"></div>
-  <div class="layout">
-    <aside class="sidebar">
-      <h2>메뉴</h2>
-      <ul class="menu">
-        <li><a href="/account/account">계좌관리</a></li>
-        <li><a href="/tag/tag">태그관리</a></li>
-        <li><a href="/template/template" class="active">템플릿관리</a></li>
-        <li><a href="/transaction/create-list">거래등록/목록</a></li>
-        <li><a href="/transaction/update-delete">거래수정/삭제</a></li>
-      </ul>
-    </aside>
-    <main class="content">
-      <section class="panel">
-        <h1 class="page-title">템플릿관리</h1>
-        <div class="toolbar">
-          <button id="btnAdd">행 추가</button>
-          <button id="btnEdit">선택 수정</button>
-          <button id="btnRemove">선택 삭제</button>
-          <button id="btnCancel">선택 취소</button>
-          <button id="btnApply" class="primary">적용</button>
-        </div>
-        <div id="template"></div>
-        <div id="status" class="status"></div>
-      </section>
+  <nav>
+    <div class="title"><a href="/">자산관리</a></div>
+    <div class="logout"><a href="/logout">logout</a></div>
+  </nav>
 
-      <section class="panel">
-        <h2 style="margin:0 0 10px;font-size:18px;">템플릿-태그 매핑</h2>
-        <div class="mapping-row">
-          <input id="templateId" type="text" placeholder="template_id" />
-          <button id="btnUseChecked">선택행 template_id 사용</button>
-        </div>
-        <div class="mapping-row">
-          <input id="tagId" type="text" placeholder="단건 tag_id" />
-          <button id="btnMapAdd">단건 추가</button>
-          <button id="btnMapRemove">단건 삭제</button>
-          <button id="btnMapLoad">매핑 조회</button>
-        </div>
-        <div class="mapping-row">
-          <input id="tagIds" type="text" placeholder="tag_ids 예: 1,2,3" />
-          <button id="btnMapReplace" class="primary">세트 교체(PATCH)</button>
-        </div>
-        <pre id="mappingResult"></pre>
-      </section>
-    </main>
+  <div class="workspace">
+    <aside class="scroll"></aside>
+    <div class="main">
+      <main class="content">
+        <section class="page-panel section-gap">
+          <h1 class="page-title">템플릿관리</h1>
+          <div class="toolbar">
+            <button id="btnAdd">행 추가</button>
+            <button id="btnEdit">선택 수정</button>
+            <button id="btnRemove">선택 삭제</button>
+            <button id="btnCancel">선택 취소</button>
+            <button id="btnApply" class="primary">적용</button>
+          </div>
+          <div id="template" class="grid-host short"></div>
+          <div id="status" class="status"></div>
+        </section>
+
+        <section class="page-panel">
+          <h2 class="page-title page-title-sub">템플릿 태그 매핑</h2>
+          <div class="inline-row">
+            <input id="templateId" type="text" placeholder="template_id" />
+            <button id="btnUseChecked">선택한 template_id 사용</button>
+          </div>
+          <div class="inline-row">
+            <input id="tagId" type="text" placeholder="단건 tag_id" />
+            <button id="btnMapAdd">단건 추가</button>
+            <button id="btnMapRemove">단건 삭제</button>
+            <button id="btnMapLoad">매핑 조회</button>
+          </div>
+          <div class="inline-row">
+            <input id="tagIds" type="text" placeholder="tag_ids 예: 1,2,3" />
+            <button id="btnMapReplace" class="primary">세트 교체(PATCH)</button>
+          </div>
+          <pre id="mappingResult" class="pre-box"></pre>
+        </section>
+      </main>
+    </div>
   </div>
+
+  <div id="blind" class="blind"></div>
+  <script type="module" src="/script/common/layout.js"></script>
   <script type="module" src="/assets/library/wgrid/wgrid.esm.min.js"></script>
   <script type="module" src="/script/template/template.js"></script>
 </body>

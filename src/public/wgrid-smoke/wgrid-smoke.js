@@ -1,4 +1,4 @@
-import "../lib/wGrid/wGrid.js";
+import "../assets/library/wgrid/wgrid.esm.min.js";
 
 const $ = (selector) => document.querySelector(selector);
 const logEl = $("#log");
@@ -128,7 +128,7 @@ const createGrid = ({ paging, includeButton }) => {
   gridMode = paging ? "paging" : "basic";
 
   try {
-    grid = new window.wGrid("grid", {
+    grid = new window.wgrid("grid", {
       fields: buildFields(includeButton),
       option: {
         isHead: true,
