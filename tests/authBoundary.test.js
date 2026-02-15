@@ -95,8 +95,58 @@ test("missing X-Auth-User-Id returns 401", async () => {
   assert.equal(res.body.error.code, "UNAUTHORIZED");
 });
 
+test("missing auth headers on web page returns 401", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app).get("/");
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, "UNAUTHORIZED");
+});
+
+test("web page request with auth headers succeeds", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore(), gatewaySecret: "gs-secret" });
+  const res = await request(app)
+    .get("/")
+    .set("X-Gateway-Secret", "gs-secret")
+    .set("X-Auth-User-Id", "1")
+    .set("X-Auth-Provider", "oe");
+
+  assert.equal(res.status, 200);
+});
+
+test("web page request with invalid gateway secret returns 401", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore(), gatewaySecret: "gs-secret" });
+  const res = await request(app)
+    .get("/")
+    .set("X-Gateway-Secret", "wrong-secret")
+    .set("X-Auth-User-Id", "1")
+    .set("X-Auth-Provider", "oe");
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, "UNAUTHORIZED");
+});
+
+test("missing auth headers on static asset returns 401", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app).get("/style/common.css");
+
+  assert.equal(res.status, 401);
+  assert.equal(res.body.error.code, "UNAUTHORIZED");
+});
+
 test("with X-Auth-User-Id passes boundary", async () => {
   const app = createApp({ accountStore: createFakeAccountStore() });
+  const res = await request(app)
+    .get("/api/accounts")
+    .set("X-Auth-User-Id", "1")
+    .set("X-Auth-Provider", "oe");
+
+  assert.equal(res.status, 200);
+  assert.equal(Array.isArray(res.body.data.list), true);
+});
+
+test("api boundary keeps working without gateway secret", async () => {
+  const app = createApp({ accountStore: createFakeAccountStore(), gatewaySecret: "gs-secret" });
   const res = await request(app)
     .get("/api/accounts")
     .set("X-Auth-User-Id", "1")

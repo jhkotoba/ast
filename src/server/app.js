@@ -8,7 +8,7 @@ const { createPrismaTransactionStore } = require("./db/transactionStore");
 const { createPrismaSubscriptionStore } = require("./db/subscriptionStore");
 const { prisma } = require("./db/prisma");
 const { errorHandler } = require("./errors/errorHandler");
-const { NotFoundError } = require("./errors/httpErrors");
+const { NotFoundError, UnauthorizedError } = require("./errors/httpErrors");
 const { requireAuth } = require("./middlewares/requireAuth");
 const createAccountsRouter = require("./routes/accounts");
 const createSubscriptionsRouter = require("./routes/subscriptions");
@@ -17,6 +17,38 @@ const createTemplatesRouter = require("./routes/templates");
 const createTransactionsRouter = require("./routes/transactions");
 const healthRouter = require("./routes/health");
 
+function isBypassPath(pathname) {
+  if (!pathname) {
+    return false;
+  }
+
+  return pathname === "/health" || pathname.startsWith("/health/") || pathname === "/api" || pathname.startsWith("/api/");
+}
+
+function resolveGatewaySecret(options = {}) {
+  const hasOption = Object.prototype.hasOwnProperty.call(options, "gatewaySecret");
+  const raw = hasOption ? options.gatewaySecret : process.env.GATEWAY_SECRET_KEY;
+  if (typeof raw !== "string") {
+    return "";
+  }
+  return raw.trim();
+}
+
+function requireGatewaySecret(secret) {
+  return (req, res, next) => {
+    if (!secret || isBypassPath(req.path)) {
+      return next();
+    }
+
+    const headerSecret = req.header("X-Gateway-Secret");
+    if (!headerSecret || String(headerSecret).trim() !== secret) {
+      return next(new UnauthorizedError("Missing or invalid X-Gateway-Secret"));
+    }
+
+    return next();
+  };
+}
+
 function createApp(options = {}) {
   const app = express();
   const accountStore = options.accountStore || createPrismaAccountStore(prisma);
@@ -24,9 +56,18 @@ function createApp(options = {}) {
   const templateStore = options.templateStore || createPrismaTemplateStore(prisma);
   const transactionStore = options.transactionStore || createPrismaTransactionStore(prisma);
   const subscriptionStore = options.subscriptionStore || createPrismaSubscriptionStore(prisma);
+  const gatewaySecret = resolveGatewaySecret(options);
   const publicRoot = path.resolve(__dirname, "../public");
 
   app.use(express.json());
+  app.use(requireGatewaySecret(gatewaySecret));
+  app.use((req, res, next) => {
+    if (isBypassPath(req.path)) {
+      return next();
+    }
+
+    return requireAuth(req, res, next);
+  });
 
   app.use("/assets", express.static(path.join(publicRoot, "assets")));
   app.use("/script", express.static(path.join(publicRoot, "assets", "script")));
