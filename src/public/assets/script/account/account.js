@@ -39,17 +39,6 @@ async function apiRequest(method, url, body) {
   return data;
 }
 
-function toBoolean(value, fallback = true) {
-  if (value === undefined || value === null || value === "") {
-    return fallback;
-  }
-  if (typeof value === "boolean") {
-    return value;
-  }
-  const normalized = String(value).trim().toLowerCase();
-  return ["1", "true", "y", "yes"].includes(normalized);
-}
-
 function toNullableText(value) {
   if (value === undefined || value === null || value === "") {
     return null;
@@ -134,7 +123,6 @@ function normalizeWritePayload(row, { requireAccountName, requireBalance }) {
     currency_code: normalizeCurrencyCode(row.currency_code),
     current_balance: currentBalance,
     display_order: displayOrder,
-    is_active: toBoolean(row.is_active, true),
   };
 
   return payload;
@@ -170,22 +158,6 @@ const account = new window.wgrid("account", {
     },
     { title: "현재 잔액", element: "text", name: "current_balance", edit: "text", width: "10%" },
     { title: "정렬 순서", element: "text", name: "display_order", edit: "text", width: "8%" },
-    {
-      title: "사용여부",
-      element: "text",
-      name: "is_active",
-      edit: "select",
-      width: "8%",
-      data: {
-        mapping: { true: "사용", false: "미사용" },
-        select: {
-          list: [
-            { value: "true", text: "사용" },
-            { value: "false", text: "미사용" },
-          ],
-        },
-      },
-    },
     { title: "등록일시", element: "text", name: "created_at", width: "12%" },
     { title: "수정일시", element: "text", name: "updated_at", width: "12%" },
   ],
@@ -204,7 +176,6 @@ const account = new window.wgrid("account", {
       account_type: "ETC",
       currency_code: "KRW",
       display_order: 0,
-      is_active: "true",
     },
   },
   search: async (params = {}) => {
@@ -222,7 +193,6 @@ const account = new window.wgrid("account", {
       account_type: normalizeAccountType(item.account_type),
       currency_code: normalizeCurrencyCode(item.currency_code),
       current_balance: formatBalance(item.current_balance),
-      is_active: String(item.is_active),
       created_at: formatDateTime(item.created_at),
       updated_at: formatDateTime(item.updated_at),
     }));
